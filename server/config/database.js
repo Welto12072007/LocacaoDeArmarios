@@ -11,10 +11,7 @@ const dbConfig = {
   database: process.env.DB_NAME || 'locker_management',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  queueLimit: 0
 };
 
 // Create connection pool
@@ -26,16 +23,30 @@ const testConnection = async () => {
     const connection = await pool.getConnection();
     console.log('✅ Database connected successfully');
     connection.release();
+    return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    process.exit(1);
+    console.error('');
+    console.error('🔧 Troubleshooting steps:');
+    console.error('1. Make sure MySQL/MariaDB server is running');
+    console.error('2. Check your database credentials in .env file');
+    console.error('3. Verify the database exists and is accessible');
+    console.error('4. Check if port 3306 is available and not blocked');
+    console.error('');
+    return false;
   }
 };
 
 // Initialize database tables
 const initializeDatabase = async () => {
   try {
-    await testConnection();
+    const connected = await testConnection();
+    
+    if (!connected) {
+      console.error('❌ Cannot initialize database - connection failed');
+      console.error('Please start your MySQL/MariaDB server and try again');
+      process.exit(1);
+    }
     
     // Create tables if they don't exist
     await createTables();
