@@ -13,7 +13,7 @@ import rentalRoutes from './routes/rentals.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5173;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({

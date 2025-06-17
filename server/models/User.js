@@ -1,22 +1,23 @@
 import { pool } from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
-class Student {
+class User {
   static async findAll(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     
     const [rows] = await pool.execute(
-      `SELECT * FROM students 
+      `SELECT * FROM users 
        ORDER BY created_at DESC 
        LIMIT ? OFFSET ?`,
       [limit, offset]
     );
 
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM students'
+      'SELECT COUNT(*) as total FROM users'
     );
 
     return {
-      data: rows.map(this.formatStudent),
+      data: rows.map(this.formatUser),
       total: countResult[0].total,
       page,
       limit,
@@ -26,44 +27,57 @@ class Student {
 
   static async findById(id) {
     const [rows] = await pool.execute(
-      'SELECT * FROM students WHERE id = ?',
+      'SELECT * FROM users WHERE id = ?',
       [id]
     );
 
-    return rows.length > 0 ? this.formatStudent(rows[0]) : null;
+    return rows.length > 0 ? this.formatUser(rows[0]) : null;
   }
 
-  static async create(studentData) {
+  static async findByEmail(email) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    return rows.length > 0 ? rows[0] : null;
+  }
+
+  static async create(userData) {
     const {
       name,
       email,
-      phone,
-      studentId,
-      course,
-      semester,
-      status = 'active'
-    } = studentData;
+      password,
+      role = 'user'
+    } = userData;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute(
-      `INSERT INTO students (name, email, phone, student_id, course, semester, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, phone, studentId, course, semester, status]
+      `INSERT INTO users (name, email, password, role) 
+       VALUES (?, ?, ?, ?)`,
+      [name, email, hashedPassword, role]
     );
 
     return this.findById(result.insertId);
   }
 
-  static async update(id, studentData) {
+  static async update(id, userData) {
     const fields = [];
     const values = [];
 
-    Object.keys(studentData).forEach(key => {
-      if (studentData[key] !== undefined) {
-        const dbField = key === 'studentId' ? 'student_id' : key;
-        fields.push(`${dbField} = ?`);
-        values.push(studentData[key]);
+    Object.keys(userData).forEach(key => {
+      if (userData[key] !== undefined && key !== 'password') {
+        fields.push(`${key} = ?`);
+        values.push(userData[key]);
       }
     });
+
+    if (userData.password) {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      fields.push('password = ?');
+      values.push(hashedPassword);
+    }
 
     if (fields.length === 0) {
       throw new Error('No fields to update');
@@ -72,7 +86,7 @@ class Student {
     values.push(id);
 
     await pool.execute(
-      `UPDATE students SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       values
     );
 
@@ -81,45 +95,27 @@ class Student {
 
   static async delete(id) {
     const [result] = await pool.execute(
-      'DELETE FROM students WHERE id = ?',
+      'DELETE FROM users WHERE id = ?',
       [id]
     );
 
     return result.affectedRows > 0;
   }
 
-  static async findByEmail(email) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM students WHERE email = ?',
-      [email]
-    );
-
-    return rows.length > 0 ? this.formatStudent(rows[0]) : null;
+  static async validatePassword(plainPassword, hashedPassword) {
+    return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  static async findByStudentId(studentId) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM students WHERE student_id = ?',
-      [studentId]
-    );
-
-    return rows.length > 0 ? this.formatStudent(rows[0]) : null;
-  }
-
-  static formatStudent(row) {
+  static formatUser(row) {
     return {
       id: row.id,
       name: row.name,
       email: row.email,
-      phone: row.phone,
-      studentId: row.student_id,
-      course: row.course,
-      semester: row.semester,
-      status: row.status,
+      role: row.role,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
   }
 }
 
-export default Student;
+export default User;
