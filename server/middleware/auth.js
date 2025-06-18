@@ -35,12 +35,8 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Middleware simplificado - todos os usuários são admin
 export const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Acesso negado. Privilégios de administrador requeridos.'
-    });
-  }
+  // Todos os usuários autenticados são admin
   next();
 };

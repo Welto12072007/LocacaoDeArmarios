@@ -24,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
   const navigation = [
     { name: 'Dashboard', href: '#dashboard', icon: Home, current: currentPage === 'dashboard' },
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
-    { name: 'Alunos', href: '#students', icon: Users, current: currentPage === 'students' },
+    { name: 'Clientes', href: '#clients', icon: Users, current: currentPage === 'clients' },
     { name: 'Locações', href: '#rentals', icon: Calendar, current: currentPage === 'rentals' },
     { name: 'Pagamentos', href: '#payments', icon: CreditCard, current: currentPage === 'payments' },
     { name: 'Configurações', href: '#settings', icon: Settings, current: currentPage === 'settings' },
@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-base font-medium text-gray-700">{user?.name}</p>
-                <p className="text-sm font-medium text-gray-500">{user?.role}</p>
+                <p className="text-sm font-medium text-gray-500">Administrador</p>
               </div>
               <button
                 onClick={logout}
@@ -147,7 +147,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-sm font-medium text-gray-700">{user?.name}</p>
-                <p className="text-xs font-medium text-gray-500">{user?.role}</p>
+                <p className="text-xs font-medium text-gray-500">Administrador</p>
               </div>
               <button
                 onClick={logout}
@@ -176,7 +176,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               <h1 className="ml-2 lg:ml-0 text-lg font-semibold text-gray-900 capitalize">
                 {currentPage === 'dashboard' ? 'Dashboard' : 
                  currentPage === 'lockers' ? 'Armários' :
-                 currentPage === 'students' ? 'Alunos' :
+                 currentPage === 'clients' ? 'Clientes' :
                  currentPage === 'rentals' ? 'Locações' :
                  currentPage === 'payments' ? 'Pagamentos' :
                  currentPage === 'settings' ? 'Configurações' : currentPage}

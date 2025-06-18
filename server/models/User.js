@@ -51,16 +51,15 @@ class User {
     const {
       name,
       email,
-      password,
-      role = 'user'
+      password
     } = userData;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute(
       `INSERT INTO users (name, email, password, role) 
-       VALUES (?, ?, ?, ?)`,
-      [name, email, hashedPassword, role]
+       VALUES (?, ?, ?, 'admin')`,
+      [name, email, hashedPassword]
     );
 
     return this.findById(result.insertId);
@@ -118,7 +117,7 @@ class User {
       id: row.id,
       name: row.name,
       email: row.email,
-      role: row.role,
+      role: 'admin', // Sempre admin
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };

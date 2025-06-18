@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/auth/LoginForm';
 import Dashboard from './components/dashboard/Dashboard';
 import LockerManagement from './components/lockers/LockerManagement';
-import StudentManagement from './components/students/StudentManagement';
+import ClientManagement from './components/clients/ClientManagement';
 import RentalManagement from './components/rentals/RentalManagement';
 
 // Simple router component for demo purposes
@@ -40,8 +40,8 @@ const AppRouter: React.FC = () => {
   switch (currentRoute) {
     case 'lockers':
       return <LockerManagement />;
-    case 'students':
-      return <StudentManagement />;
+    case 'clients':
+      return <ClientManagement />;
     case 'rentals':
       return <RentalManagement />;
     case 'dashboard':

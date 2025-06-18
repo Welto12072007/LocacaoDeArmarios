@@ -88,38 +88,35 @@ const createTables = async () => {
   const connection = await pool.getConnection();
   
   try {
-    // Users table
+    // Users table (apenas admins)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user') DEFAULT 'user',
+        role ENUM('admin') DEFAULT 'admin',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_role (role)
+        INDEX idx_email (email)
       )
     `);
 
-    // Students table
+    // Clients table (substitui students)
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS students (
+      CREATE TABLE IF NOT EXISTS clients (
         id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone VARCHAR(20),
-        student_id VARCHAR(50) UNIQUE NOT NULL,
-        course VARCHAR(255) NOT NULL,
-        semester INT NOT NULL,
+        document VARCHAR(50) UNIQUE NOT NULL,
+        address TEXT,
         status ENUM('active', 'inactive') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        INDEX idx_student_id (student_id),
-        INDEX idx_status (status),
-        INDEX idx_course (course)
+        INDEX idx_document (document),
+        INDEX idx_status (status)
       )
     `);
 
@@ -141,12 +138,12 @@ const createTables = async () => {
       )
     `);
 
-    // Rentals table
+    // Rentals table (agora com clients)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS rentals (
         id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
         locker_id VARCHAR(36) NOT NULL,
-        student_id VARCHAR(36) NOT NULL,
+        client_id VARCHAR(36) NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
         monthly_price DECIMAL(10, 2) NOT NULL,
@@ -157,9 +154,9 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
         INDEX idx_locker_id (locker_id),
-        INDEX idx_student_id (student_id),
+        INDEX idx_client_id (client_id),
         INDEX idx_status (status),
         INDEX idx_payment_status (payment_status),
         INDEX idx_dates (start_date, end_date)
@@ -218,16 +215,16 @@ const createTables = async () => {
 
 const addSampleData = async (connection) => {
   try {
-    // Check if we have sample students
-    const [students] = await connection.execute('SELECT COUNT(*) as count FROM students');
-    if (students[0].count === 0) {
+    // Check if we have sample clients
+    const [clients] = await connection.execute('SELECT COUNT(*) as count FROM clients');
+    if (clients[0].count === 0) {
       await connection.execute(`
-        INSERT INTO students (name, email, phone, student_id, course, semester, status) VALUES
-        ('João Silva', 'joao.silva@university.edu', '(11) 99999-1111', 'STU2024001', 'Engenharia de Software', 6, 'active'),
-        ('Maria Santos', 'maria.santos@university.edu', '(11) 99999-2222', 'STU2024002', 'Ciência da Computação', 4, 'active'),
-        ('Pedro Oliveira', 'pedro.oliveira@university.edu', '(11) 99999-3333', 'STU2024003', 'Sistemas de Informação', 2, 'active')
+        INSERT INTO clients (name, email, phone, document, address, status) VALUES
+        ('João Silva', 'joao.silva@email.com', '(11) 99999-1111', '123.456.789-01', 'Rua A, 123 - São Paulo/SP', 'active'),
+        ('Maria Santos', 'maria.santos@email.com', '(11) 99999-2222', '987.654.321-02', 'Rua B, 456 - São Paulo/SP', 'active'),
+        ('Pedro Oliveira', 'pedro.oliveira@email.com', '(11) 99999-3333', '456.789.123-03', 'Rua C, 789 - São Paulo/SP', 'active')
       `);
-      console.log('✅ Sample students added');
+      console.log('✅ Sample clients added');
     }
 
     // Check if we have sample lockers
