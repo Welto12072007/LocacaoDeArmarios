@@ -22,6 +22,7 @@ const testConnection = async () => {
   try {
     const connection = await pool.getConnection();
     console.log('✅ Database connected successfully');
+    console.log(`📊 Connected to: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
     connection.release();
     return true;
   } catch (error) {
@@ -32,6 +33,7 @@ const testConnection = async () => {
     console.error('2. Check your database credentials in .env file');
     console.error('3. Verify the database exists and is accessible');
     console.error('4. Check if port 3306 is available and not blocked');
+    console.error('5. Try connecting with: mysql -u root -p');
     console.error('');
     return false;
   }
@@ -48,6 +50,9 @@ const initializeDatabase = async () => {
       process.exit(1);
     }
     
+    // Create database if it doesn't exist
+    await createDatabase();
+    
     // Create tables if they don't exist
     await createTables();
     
@@ -55,6 +60,27 @@ const initializeDatabase = async () => {
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     process.exit(1);
+  }
+};
+
+const createDatabase = async () => {
+  try {
+    // Connect without specifying database
+    const tempConfig = { ...dbConfig };
+    delete tempConfig.database;
+    const tempPool = mysql.createPool(tempConfig);
+    
+    const connection = await tempPool.getConnection();
+    
+    // Create database if it doesn't exist
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    console.log(`✅ Database '${dbConfig.database}' ready`);
+    
+    connection.release();
+    await tempPool.end();
+  } catch (error) {
+    console.error('❌ Error creating database:', error);
+    throw error;
   }
 };
 
@@ -71,7 +97,9 @@ const createTables = async () => {
         password VARCHAR(255) NOT NULL,
         role ENUM('admin', 'user') DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_role (role)
       )
     `);
 
@@ -87,7 +115,11 @@ const createTables = async () => {
         semester INT NOT NULL,
         status ENUM('active', 'inactive') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_student_id (student_id),
+        INDEX idx_status (status),
+        INDEX idx_course (course)
       )
     `);
 
@@ -101,7 +133,11 @@ const createTables = async () => {
         status ENUM('available', 'rented', 'maintenance', 'reserved') DEFAULT 'available',
         monthly_price DECIMAL(10, 2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_number (number),
+        INDEX idx_status (status),
+        INDEX idx_location (location),
+        INDEX idx_size (size)
       )
     `);
 
@@ -121,7 +157,12 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+        INDEX idx_locker_id (locker_id),
+        INDEX idx_student_id (student_id),
+        INDEX idx_status (status),
+        INDEX idx_payment_status (payment_status),
+        INDEX idx_dates (start_date, end_date)
       )
     `);
 
@@ -136,11 +177,15 @@ const createTables = async () => {
         status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (rental_id) REFERENCES rentals(id) ON DELETE CASCADE
+        FOREIGN KEY (rental_id) REFERENCES rentals(id) ON DELETE CASCADE,
+        INDEX idx_rental_id (rental_id),
+        INDEX idx_status (status),
+        INDEX idx_payment_date (payment_date),
+        INDEX idx_method (method)
       )
     `);
 
-    // Create default admin user if not exists
+    // Check if default admin user exists
     const [adminExists] = await connection.execute(
       'SELECT id FROM users WHERE email = ?',
       ['admin@lockers.com']
@@ -156,11 +201,50 @@ const createTables = async () => {
       `, ['Admin User', 'admin@lockers.com', hashedPassword, 'admin']);
       
       console.log('✅ Default admin user created');
+      console.log('📧 Email: admin@lockers.com');
+      console.log('🔑 Password: admin123');
+    } else {
+      console.log('✅ Default admin user already exists');
     }
+
+    // Add some sample data if tables are empty
+    await addSampleData(connection);
 
     console.log('✅ Database tables created successfully');
   } finally {
     connection.release();
+  }
+};
+
+const addSampleData = async (connection) => {
+  try {
+    // Check if we have sample students
+    const [students] = await connection.execute('SELECT COUNT(*) as count FROM students');
+    if (students[0].count === 0) {
+      await connection.execute(`
+        INSERT INTO students (name, email, phone, student_id, course, semester, status) VALUES
+        ('João Silva', 'joao.silva@university.edu', '(11) 99999-1111', 'STU2024001', 'Engenharia de Software', 6, 'active'),
+        ('Maria Santos', 'maria.santos@university.edu', '(11) 99999-2222', 'STU2024002', 'Ciência da Computação', 4, 'active'),
+        ('Pedro Oliveira', 'pedro.oliveira@university.edu', '(11) 99999-3333', 'STU2024003', 'Sistemas de Informação', 2, 'active')
+      `);
+      console.log('✅ Sample students added');
+    }
+
+    // Check if we have sample lockers
+    const [lockers] = await connection.execute('SELECT COUNT(*) as count FROM lockers');
+    if (lockers[0].count === 0) {
+      await connection.execute(`
+        INSERT INTO lockers (number, location, size, status, monthly_price) VALUES
+        ('A001', 'Bloco A - 1º Andar', 'medium', 'available', 300.00),
+        ('A002', 'Bloco A - 1º Andar', 'large', 'available', 400.00),
+        ('A003', 'Bloco A - 1º Andar', 'small', 'available', 200.00),
+        ('B001', 'Bloco B - 2º Andar', 'medium', 'available', 300.00),
+        ('B002', 'Bloco B - 2º Andar', 'large', 'available', 400.00)
+      `);
+      console.log('✅ Sample lockers added');
+    }
+  } catch (error) {
+    console.log('ℹ️ Sample data already exists or error adding:', error.message);
   }
 };
 

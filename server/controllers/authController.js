@@ -9,6 +9,8 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login attempt for:', email);
+
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -18,22 +20,30 @@ export const login = async (req, res) => {
 
     const user = await User.findByEmail(email);
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Credenciais inválidas'
       });
     }
+
+    console.log('✅ User found:', user.email);
 
     const isValidPassword = await User.validatePassword(password, user.password);
     if (!isValidPassword) {
+      console.log('❌ Invalid password for:', email);
       return res.status(401).json({
         success: false,
         message: 'Credenciais inválidas'
       });
     }
 
+    console.log('✅ Password valid for:', email);
+
     const token = generateToken(user.id);
     const userResponse = User.formatUser(user);
+
+    console.log('✅ Login successful for:', email);
 
     res.json({
       success: true,
@@ -44,7 +54,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'

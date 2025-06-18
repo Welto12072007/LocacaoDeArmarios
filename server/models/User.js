@@ -35,11 +35,15 @@ class User {
   }
 
   static async findByEmail(email) {
+    console.log('🔍 Searching for user with email:', email);
+    
     const [rows] = await pool.execute(
       'SELECT * FROM users WHERE email = ?',
       [email]
     );
 
+    console.log('📊 Query result:', rows.length > 0 ? 'User found' : 'User not found');
+    
     return rows.length > 0 ? rows[0] : null;
   }
 
@@ -103,7 +107,10 @@ class User {
   }
 
   static async validatePassword(plainPassword, hashedPassword) {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    console.log('🔐 Validating password...');
+    const isValid = await bcrypt.compare(plainPassword, hashedPassword);
+    console.log('🔐 Password validation result:', isValid ? 'Valid' : 'Invalid');
+    return isValid;
   }
 
   static formatUser(row) {
