@@ -9,6 +9,19 @@ export interface User {
   updatedAt: string;
 }
 
+export interface Student {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  studentId: string;
+  course: string;
+  semester: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -35,7 +48,7 @@ export interface Locker {
 export interface Rental {
   id: string;
   lockerId: string;
-  clientId: string;
+  studentId: string;
   startDate: string;
   endDate: string;
   monthlyPrice: number;
@@ -47,7 +60,7 @@ export interface Rental {
   updatedAt: string;
   // Relations
   locker?: Locker;
-  client?: Client;
+  student?: Student;
 }
 
 export interface Payment {
@@ -68,7 +81,7 @@ export interface DashboardStats {
   maintenanceLockers: number;
   overdueRentals: number;
   monthlyRevenue: number;
-  totalClients: number;
+  totalStudents: number;
   activeRentals: number;
 }
 

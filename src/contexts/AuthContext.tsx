@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
-import { apiService } from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -16,6 +15,21 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Demo credentials
+const DEMO_CREDENTIALS = {
+  email: 'admin@lockers.com',
+  password: 'admin123'
+};
+
+const DEMO_USER: User = {
+  id: '1',
+  name: 'Administrador',
+  email: 'admin@lockers.com',
+  role: 'admin',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,25 +38,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for stored auth token on app load
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // In a real app, validate token with backend
-      // For now, we'll set a mock user if token exists
-      setUser({
-        id: '1',
-        name: 'Admin User',
-        email: 'admin@lockers.com',
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      setUser(DEMO_USER);
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     try {
-      const { user: loggedInUser } = await apiService.login(email, password);
-      setUser(loggedInUser);
+      // Validate demo credentials
+      if (email === DEMO_CREDENTIALS.email && password === DEMO_CREDENTIALS.password) {
+        // Generate a simple token
+        const token = btoa(`${email}:${Date.now()}`);
+        localStorage.setItem('auth_token', token);
+        setUser(DEMO_USER);
+      } else {
+        throw new Error('Credenciais inválidas');
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -52,14 +68,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      await apiService.logout();
-      setUser(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still clear user state even if API call fails
-      setUser(null);
-    }
+    localStorage.removeItem('auth_token');
+    setUser(null);
   };
 
   const value: AuthContextType = {
