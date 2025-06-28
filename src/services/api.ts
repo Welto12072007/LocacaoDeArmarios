@@ -25,17 +25,44 @@ class ApiService {
     };
 
     try {
+      console.log(`🌐 API Request: ${this.baseUrl}${endpoint}`, config);
+      
       const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+      
+      console.log(`📡 Response Status: ${response.status}`, response.statusText);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('✅ API Success:', data);
+      return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('💥 API request failed:', error);
+      
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Erro de conexão. Verifique se o servidor está rodando.');
+      }
+      
       throw error;
+    }
+  }
+
+  // Health check to verify API connection
+  async healthCheck(): Promise<{ status: string; database: string; timestamp: string }> {
+    try {
+      const response = await this.request<{ success: boolean; message: string; timestamp: string; database: string; version: string }>('/health');
+      return {
+        status: response.success ? 'OK' : 'ERROR',
+        database: response.database,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      throw new Error('Servidor não está respondendo');
     }
   }
 
@@ -58,6 +85,8 @@ class ApiService {
   }
 
   async register(name: string, email: string, password: string): Promise<{ user: any; token: string }> {
+    console.log('🔐 Registering user:', { name, email });
+    
     const response = await this.request<ApiResponse<{ user: any; accessToken: string }>>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
