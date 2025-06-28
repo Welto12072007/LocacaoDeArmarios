@@ -4,7 +4,9 @@ import { sendWelcomeEmail } from '../services/emailService.js';
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
+
+    console.log('📝 Registration attempt:', { name, email, role });
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -20,7 +22,18 @@ export const register = async (req, res) => {
       });
     }
 
-    const result = await AuthService.register({ name, email, password });
+    // Check if user already exists
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email já está em uso'
+      });
+    }
+
+    const result = await AuthService.register({ name, email, password, role });
+
+    console.log('✅ User registered successfully:', result.user.email);
 
     // Send welcome email (non-blocking)
     sendWelcomeEmail(email, name).catch(console.error);
@@ -42,7 +55,7 @@ export const register = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('❌ Register error:', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -54,6 +67,8 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login attempt for:', email);
+
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -62,6 +77,8 @@ export const login = async (req, res) => {
     }
 
     const result = await AuthService.login(email, password);
+
+    console.log('✅ Login successful for:', email);
 
     // Set refresh token as HTTP-only cookie
     res.cookie('refreshToken', result.refreshToken, {
@@ -80,7 +97,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(401).json({
       success: false,
       message: error.message
@@ -117,7 +134,7 @@ export const refresh = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error('❌ Refresh error:', error);
     res.status(401).json({
       success: false,
       message: error.message
@@ -143,7 +160,7 @@ export const forgotPassword = async (req, res) => {
       message: result.message
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error('❌ Forgot password error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -170,7 +187,7 @@ export const resetPassword = async (req, res) => {
       data: { user }
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error('❌ Reset password error:', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -203,7 +220,7 @@ export const validateResetToken = async (req, res) => {
       message: 'Token válido'
     });
   } catch (error) {
-    console.error('Validate reset token error:', error);
+    console.error('❌ Validate reset token error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -221,7 +238,7 @@ export const logout = async (req, res) => {
       message: 'Logout realizado com sucesso'
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('❌ Logout error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -244,7 +261,7 @@ export const getProfile = async (req, res) => {
       data: user
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('❌ Get profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -290,7 +307,7 @@ export const updateProfile = async (req, res) => {
       data: updatedUser
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error('❌ Update profile error:', error);
     res.status(400).json({
       success: false,
       message: error.message
