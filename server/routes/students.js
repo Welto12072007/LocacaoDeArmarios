@@ -6,11 +6,11 @@ import {
   updateStudent,
   deleteStudent
 } from '../controllers/studentController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/', getStudents);
 router.get('/:id', getStudent);

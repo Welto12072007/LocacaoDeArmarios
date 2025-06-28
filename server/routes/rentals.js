@@ -6,11 +6,11 @@ import {
   updateRental,
   deleteRental
 } from '../controllers/rentalController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/', getRentals);
 router.get('/:id', getRental);

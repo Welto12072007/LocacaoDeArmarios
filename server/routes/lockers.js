@@ -6,11 +6,11 @@ import {
   updateLocker,
   deleteLocker
 } from '../controllers/lockerController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/', getLockers);
 router.get('/:id', getLocker);
