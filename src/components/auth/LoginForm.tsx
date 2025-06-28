@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Package, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
-import ConnectionStatus from '../common/ConnectionStatus';
 import ForgotPasswordForm from './ForgotPasswordForm';
 import RegisterForm from './RegisterForm';
 
@@ -58,11 +57,6 @@ const LoginForm: React.FC = () => {
           <p className="mt-2 text-center text-sm text-gray-600">
             Sistema de Gestão de Armários
           </p>
-          
-          {/* Connection Status */}
-          <div className="mt-4 flex justify-center">
-            <ConnectionStatus />
-          </div>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

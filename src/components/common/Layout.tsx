@@ -12,7 +12,6 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import ConnectionStatus from './ConnectionStatus';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -143,10 +142,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
             </nav>
           </div>
           
-          <div className="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
-            {/* Connection Status */}
-            <ConnectionStatus />
-            
+          <div className="flex-shrink-0 border-t border-gray-200 p-4">
             <div className="flex items-center w-full">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
@@ -197,7 +193,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
             </div>
 
             <div className="lg:hidden flex items-center space-x-2">
-              <ConnectionStatus className="text-xs" />
               <button
                 onClick={logout}
                 className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors duration-200"
