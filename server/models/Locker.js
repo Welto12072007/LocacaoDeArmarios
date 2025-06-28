@@ -1,126 +1,191 @@
-import { pool } from '../config/database.js';
+import { supabase } from '../config/database.js';
 
-class Locker {
-  static async findAll(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    
-    const [rows] = await pool.execute(
-      `SELECT * FROM lockers 
-       ORDER BY number ASC 
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
+export class Locker {
+  static async findAll(limit = 50, offset = 0, search = '') {
+    try {
+      let query = supabase
+        .from('lockers')
+        .select('*', { count: 'exact' });
 
-    const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM lockers'
-    );
+      if (search) {
+        query = query.or(`number.ilike.%${search}%,location.ilike.%${search}%`);
+      }
 
-    return {
-      data: rows.map(this.formatLocker),
-      total: countResult[0].total,
-      page,
-      limit,
-      totalPages: Math.ceil(countResult[0].total / limit)
-    };
+      const { data, error, count } = await query
+        .range(offset, offset + limit - 1)
+        .order('number', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return { lockers: data, total: count };
+    } catch (error) {
+      console.error('Error finding all lockers:', error);
+      throw error;
+    }
   }
 
   static async findById(id) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM lockers WHERE id = ?',
-      [id]
-    );
+    try {
+      const { data, error } = await supabase
+        .from('lockers')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    return rows.length > 0 ? this.formatLocker(rows[0]) : null;
-  }
-
-  static async create(lockerData) {
-    const {
-      number,
-      location,
-      size,
-      monthlyPrice,
-      status = 'available'
-    } = lockerData;
-
-    const [result] = await pool.execute(
-      `INSERT INTO lockers (number, location, size, monthly_price, status) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [number, location, size, monthlyPrice, status]
-    );
-
-    return this.findById(result.insertId);
-  }
-
-  static async update(id, lockerData) {
-    const fields = [];
-    const values = [];
-
-    Object.keys(lockerData).forEach(key => {
-      if (lockerData[key] !== undefined) {
-        const dbField = key === 'monthlyPrice' ? 'monthly_price' : key;
-        fields.push(`${dbField} = ?`);
-        values.push(lockerData[key]);
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
-    });
 
-    if (fields.length === 0) {
-      throw new Error('No fields to update');
+      return data;
+    } catch (error) {
+      console.error('Error finding locker by ID:', error);
+      throw error;
     }
-
-    values.push(id);
-
-    await pool.execute(
-      `UPDATE lockers SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      values
-    );
-
-    return this.findById(id);
-  }
-
-  static async delete(id) {
-    const [result] = await pool.execute(
-      'DELETE FROM lockers WHERE id = ?',
-      [id]
-    );
-
-    return result.affectedRows > 0;
   }
 
   static async findByNumber(number) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM lockers WHERE number = ?',
-      [number]
-    );
+    try {
+      const { data, error } = await supabase
+        .from('lockers')
+        .select('*')
+        .eq('number', number)
+        .single();
 
-    return rows.length > 0 ? this.formatLocker(rows[0]) : null;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding locker by number:', error);
+      throw error;
+    }
+  }
+
+  static async create(lockerData) {
+    try {
+      const { data, error } = await supabase
+        .from('lockers')
+        .insert([lockerData])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating locker:', error);
+      throw error;
+    }
+  }
+
+  static async update(id, lockerData) {
+    try {
+      const { data, error } = await supabase
+        .from('lockers')
+        .update(lockerData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating locker:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const { error } = await supabase
+        .from('lockers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting locker:', error);
+      throw error;
+    }
   }
 
   static async getStats() {
-    const [stats] = await pool.execute(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
-        SUM(CASE WHEN status = 'rented' THEN 1 ELSE 0 END) as rented,
-        SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance,
-        SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved
-      FROM lockers
-    `);
+    try {
+      const { data: totalLockers, error: totalError } = await supabase
+        .from('lockers')
+        .select('id', { count: 'exact' });
 
-    return stats[0];
+      if (totalError) {
+        throw totalError;
+      }
+
+      const { data: availableLockers, error: availableError } = await supabase
+        .from('lockers')
+        .select('id', { count: 'exact' })
+        .eq('status', 'available');
+
+      if (availableError) {
+        throw availableError;
+      }
+
+      const { data: rentedLockers, error: rentedError } = await supabase
+        .from('lockers')
+        .select('id', { count: 'exact' })
+        .eq('status', 'rented');
+
+      if (rentedError) {
+        throw rentedError;
+      }
+
+      const { data: maintenanceLockers, error: maintenanceError } = await supabase
+        .from('lockers')
+        .select('id', { count: 'exact' })
+        .eq('status', 'maintenance');
+
+      if (maintenanceError) {
+        throw maintenanceError;
+      }
+
+      return {
+        total: totalLockers.length,
+        available: availableLockers.length,
+        rented: rentedLockers.length,
+        maintenance: maintenanceLockers.length
+      };
+    } catch (error) {
+      console.error('Error getting locker stats:', error);
+      throw error;
+    }
   }
 
-  static formatLocker(row) {
-    return {
-      id: row.id,
-      number: row.number,
-      location: row.location,
-      size: row.size,
-      status: row.status,
-      monthlyPrice: parseFloat(row.monthly_price),
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    };
+  static async findAvailable() {
+    try {
+      const { data, error } = await supabase
+        .from('lockers')
+        .select('*')
+        .eq('status', 'available')
+        .order('number', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding available lockers:', error);
+      throw error;
+    }
   }
 }
-
-export default Locker;

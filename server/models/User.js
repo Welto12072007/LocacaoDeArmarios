@@ -1,207 +1,200 @@
-import { pool } from '../config/database.js';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import { supabase } from '../config/database.js';
 
-class User {
-  static async findAll(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    
-    const [rows] = await pool.execute(
-      `SELECT id, email, role, failed_login_attempts, locked_until, created_at, updated_at 
-       FROM users 
-       ORDER BY created_at DESC 
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
+export class User {
+  static async findByEmail(email) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-    const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM users'
-    );
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
-    return {
-      data: rows.map(this.formatUser),
-      total: countResult[0].total,
-      page,
-      limit,
-      totalPages: Math.ceil(countResult[0].total / limit)
-    };
+      return data;
+    } catch (error) {
+      console.error('Error finding user by email:', error);
+      throw error;
+    }
   }
 
   static async findById(id) {
-    const [rows] = await pool.execute(
-      'SELECT id, email, role, failed_login_attempts, locked_until, created_at, updated_at FROM users WHERE id = ?',
-      [id]
-    );
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    return rows.length > 0 ? this.formatUser(rows[0]) : null;
-  }
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
-  static async findByEmail(email) {
-    console.log('🔍 Searching for user with email:', email);
-    
-    const [rows] = await pool.execute(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
-    );
-
-    console.log('📊 Query result:', rows.length > 0 ? 'User found' : 'User not found');
-    
-    return rows.length > 0 ? rows[0] : null;
-  }
-
-  static async findByResetToken(token) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM users WHERE reset_password_token = ? AND reset_token_expiry > NOW()',
-      [token]
-    );
-
-    return rows.length > 0 ? rows[0] : null;
+      return data;
+    } catch (error) {
+      console.error('Error finding user by ID:', error);
+      throw error;
+    }
   }
 
   static async create(userData) {
-    const {
-      name,
-      email,
-      password,
-      role = 'user'
-    } = userData;
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select()
+        .single();
 
-    // Check if this is the first user (make them admin)
-    const [userCount] = await pool.execute('SELECT COUNT(*) as count FROM users');
-    const finalRole = userCount[0].count === 0 ? 'admin' : role;
+      if (error) {
+        throw error;
+      }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const [result] = await pool.execute(
-      `INSERT INTO users (email, password, role) 
-       VALUES (?, ?, ?)`,
-      [email, hashedPassword, finalRole]
-    );
-
-    return this.findById(result.insertId);
+      return data;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
 
   static async update(id, userData) {
-    const fields = [];
-    const values = [];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update(userData)
+        .eq('id', id)
+        .select()
+        .single();
 
-    Object.keys(userData).forEach(key => {
-      if (userData[key] !== undefined && key !== 'password') {
-        fields.push(`${key} = ?`);
-        values.push(userData[key]);
+      if (error) {
+        throw error;
       }
-    });
 
-    if (userData.password) {
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
-      fields.push('password = ?');
-      values.push(hashedPassword);
+      return data;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
     }
-
-    if (fields.length === 0) {
-      throw new Error('No fields to update');
-    }
-
-    values.push(id);
-
-    await pool.execute(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    );
-
-    return this.findById(id);
   }
 
   static async delete(id) {
-    const [result] = await pool.execute(
-      'DELETE FROM users WHERE id = ?',
-      [id]
-    );
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
 
-    return result.affectedRows > 0;
-  }
+      if (error) {
+        throw error;
+      }
 
-  static async validatePassword(plainPassword, hashedPassword) {
-    console.log('🔐 Validating password...');
-    const isValid = await bcrypt.compare(plainPassword, hashedPassword);
-    console.log('🔐 Password validation result:', isValid ? 'Valid' : 'Invalid');
-    return isValid;
-  }
-
-  static async incrementFailedAttempts(email) {
-    await pool.execute(
-      `UPDATE users 
-       SET failed_login_attempts = failed_login_attempts + 1,
-           locked_until = CASE 
-             WHEN failed_login_attempts >= 4 THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE)
-             ELSE locked_until
-           END
-       WHERE email = ?`,
-      [email]
-    );
-  }
-
-  static async resetFailedAttempts(email) {
-    await pool.execute(
-      'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = ?',
-      [email]
-    );
-  }
-
-  static async isAccountLocked(email) {
-    const [rows] = await pool.execute(
-      'SELECT locked_until FROM users WHERE email = ? AND locked_until > NOW()',
-      [email]
-    );
-
-    return rows.length > 0;
-  }
-
-  static async generateResetToken(email) {
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-
-    await pool.execute(
-      'UPDATE users SET reset_password_token = ?, reset_token_expiry = ? WHERE email = ?',
-      [token, expiry, email]
-    );
-
-    return token;
-  }
-
-  static async resetPassword(token, newPassword) {
-    const user = await this.findByResetToken(token);
-    if (!user) {
-      throw new Error('Invalid or expired reset token');
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
     }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-
-    await pool.execute(
-      `UPDATE users 
-       SET password = ?, 
-           reset_password_token = NULL, 
-           reset_token_expiry = NULL,
-           failed_login_attempts = 0,
-           locked_until = NULL
-       WHERE id = ?`,
-      [hashedPassword, user.id]
-    );
-
-    return this.findById(user.id);
   }
 
-  static formatUser(row) {
-    return {
-      id: row.id,
-      email: row.email,
-      role: row.role,
-      failedLoginAttempts: row.failed_login_attempts,
-      lockedUntil: row.locked_until,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    };
+  static async findAll(limit = 50, offset = 0) {
+    try {
+      const { data, error, count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact' })
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return { users: data, total: count };
+    } catch (error) {
+      console.error('Error finding all users:', error);
+      throw error;
+    }
+  }
+
+  static async updateFailedLoginAttempts(id, attempts) {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          failed_login_attempts: attempts,
+          locked_until: attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null
+        })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating failed login attempts:', error);
+      throw error;
+    }
+  }
+
+  static async setResetToken(email, token, expiry) {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          reset_password_token: token,
+          reset_token_expiry: expiry
+        })
+        .eq('email', email);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error setting reset token:', error);
+      throw error;
+    }
+  }
+
+  static async findByResetToken(token) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('reset_password_token', token)
+        .gt('reset_token_expiry', new Date().toISOString())
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding user by reset token:', error);
+      throw error;
+    }
+  }
+
+  static async clearResetToken(id) {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          reset_password_token: null,
+          reset_token_expiry: null
+        })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error clearing reset token:', error);
+      throw error;
+    }
   }
 }
-
-export default User;

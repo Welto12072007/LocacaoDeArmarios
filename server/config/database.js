@@ -1,120 +1,68 @@
-import mysql from 'mysql2/promise';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create connection pool
-export const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'locker_management',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-});
+// Create Supabase client
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Initialize database with tables
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing Supabase configuration. Please set up Supabase connection.');
+  process.exit(1);
+}
+
+export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Initialize database with tables and policies
 export const initializeDatabase = async () => {
   try {
     console.log('🔄 Initializing database...');
 
-    // Create users table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user') DEFAULT 'user',
-        reset_password_token VARCHAR(255) NULL,
-        reset_token_expiry TIMESTAMP NULL,
-        failed_login_attempts INT DEFAULT 0,
-        locked_until TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_reset_token (reset_password_token),
-        INDEX idx_role (role)
-      )
-    `);
+    // Check if we can connect to Supabase
+    const { data, error } = await supabase.from('users').select('count').limit(1);
+    
+    if (error && error.code === '42P01') {
+      console.log('📋 Tables not found. Please run the migration to create tables.');
+      console.log('💡 The migration file has been created in supabase/migrations/');
+      return;
+    }
 
-    // Create students table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS students (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        phone VARCHAR(20),
-        student_id VARCHAR(50) UNIQUE NOT NULL,
-        course VARCHAR(255) NOT NULL,
-        semester INT NOT NULL,
-        status ENUM('active', 'inactive') DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_student_id (student_id),
-        INDEX idx_status (status)
-      )
-    `);
+    if (error) {
+      console.error('❌ Database connection failed:', error);
+      throw error;
+    }
 
-    // Create lockers table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS lockers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        number VARCHAR(50) UNIQUE NOT NULL,
-        location VARCHAR(255) NOT NULL,
-        size ENUM('small', 'medium', 'large') NOT NULL,
-        status ENUM('available', 'rented', 'maintenance', 'reserved') DEFAULT 'available',
-        monthly_price DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_number (number),
-        INDEX idx_status (status),
-        INDEX idx_size (size)
-      )
-    `);
+    // Check if default admin user exists
+    const { data: existingAdmin, error: adminError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', 'admin@lockers.com')
+      .single();
 
-    // Create rentals table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS rentals (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        locker_id INT NOT NULL,
-        student_id INT NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-        monthly_price DECIMAL(10, 2) NOT NULL,
-        total_amount DECIMAL(10, 2) NOT NULL,
-        status ENUM('active', 'overdue', 'completed', 'cancelled') DEFAULT 'active',
-        payment_status ENUM('pending', 'paid', 'overdue') DEFAULT 'pending',
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (locker_id) REFERENCES lockers(id) ON DELETE CASCADE,
-        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-        INDEX idx_locker_id (locker_id),
-        INDEX idx_student_id (student_id),
-        INDEX idx_status (status),
-        INDEX idx_payment_status (payment_status)
-      )
-    `);
+    if (adminError && adminError.code !== 'PGRST116') {
+      console.error('❌ Error checking admin user:', adminError);
+      throw adminError;
+    }
 
-    // Insert default admin user if not exists
-    const [existingAdmin] = await pool.execute(
-      'SELECT id FROM users WHERE email = ?',
-      ['admin@lockers.com']
-    );
-
-    if (existingAdmin.length === 0) {
+    if (!existingAdmin) {
       // Password: admin123 (hashed with bcrypt cost 12)
       const hashedPassword = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G';
       
-      await pool.execute(
-        'INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
-        ['admin@lockers.com', hashedPassword, 'admin']
-      );
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert([
+          {
+            email: 'admin@lockers.com',
+            password: hashedPassword,
+            role: 'admin'
+          }
+        ]);
+
+      if (insertError) {
+        console.error('❌ Error creating admin user:', insertError);
+        throw insertError;
+      }
       
       console.log('✅ Default admin user created');
     }

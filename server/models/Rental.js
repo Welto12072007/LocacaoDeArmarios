@@ -1,207 +1,283 @@
-import { pool } from '../config/database.js';
+import { supabase } from '../config/database.js';
 
-class Rental {
-  static async findAll(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    
-    const [rows] = await pool.execute(
-      `SELECT 
-        r.*,
-        l.number as locker_number,
-        l.location as locker_location,
-        l.size as locker_size,
-        s.name as student_name,
-        s.email as student_email,
-        s.student_id as student_student_id
-       FROM rentals r
-       LEFT JOIN lockers l ON r.locker_id = l.id
-       LEFT JOIN students s ON r.student_id = s.id
-       ORDER BY r.created_at DESC 
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
+export class Rental {
+  static async findAll(limit = 50, offset = 0, search = '') {
+    try {
+      let query = supabase
+        .from('rentals')
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `, { count: 'exact' });
 
-    const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM rentals'
-    );
+      if (search) {
+        // For complex searches involving joined tables, we might need to adjust this
+        query = query.or(`notes.ilike.%${search}%`);
+      }
 
-    return {
-      data: rows.map(this.formatRental),
-      total: countResult[0].total,
-      page,
-      limit,
-      totalPages: Math.ceil(countResult[0].total / limit)
-    };
+      const { data, error, count } = await query
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return { rentals: data, total: count };
+    } catch (error) {
+      console.error('Error finding all rentals:', error);
+      throw error;
+    }
   }
 
   static async findById(id) {
-    const [rows] = await pool.execute(
-      `SELECT 
-        r.*,
-        l.number as locker_number,
-        l.location as locker_location,
-        l.size as locker_size,
-        s.name as student_name,
-        s.email as student_email,
-        s.student_id as student_student_id
-       FROM rentals r
-       LEFT JOIN lockers l ON r.locker_id = l.id
-       LEFT JOIN students s ON r.student_id = s.id
-       WHERE r.id = ?`,
-      [id]
-    );
+    try {
+      const { data, error } = await supabase
+        .from('rentals')
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `)
+        .eq('id', id)
+        .single();
 
-    return rows.length > 0 ? this.formatRental(rows[0]) : null;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding rental by ID:', error);
+      throw error;
+    }
   }
 
   static async create(rentalData) {
-    const {
-      lockerId,
-      studentId,
-      startDate,
-      endDate,
-      monthlyPrice,
-      totalAmount,
-      status = 'active',
-      paymentStatus = 'pending',
-      notes
-    } = rentalData;
-
-    const connection = await pool.getConnection();
-    
     try {
-      await connection.beginTransaction();
+      const { data, error } = await supabase
+        .from('rentals')
+        .insert([rentalData])
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `)
+        .single();
 
-      // Create rental
-      const [result] = await connection.execute(
-        `INSERT INTO rentals (locker_id, student_id, start_date, end_date, monthly_price, total_amount, status, payment_status, notes) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [lockerId, studentId, startDate, endDate, monthlyPrice, totalAmount, status, paymentStatus, notes]
-      );
+      if (error) {
+        throw error;
+      }
 
-      // Update locker status to rented
-      await connection.execute(
-        'UPDATE lockers SET status = ? WHERE id = ?',
-        ['rented', lockerId]
-      );
-
-      await connection.commit();
-      return this.findById(result.insertId);
+      return data;
     } catch (error) {
-      await connection.rollback();
+      console.error('Error creating rental:', error);
       throw error;
-    } finally {
-      connection.release();
     }
   }
 
   static async update(id, rentalData) {
-    const fields = [];
-    const values = [];
+    try {
+      const { data, error } = await supabase
+        .from('rentals')
+        .update(rentalData)
+        .eq('id', id)
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `)
+        .single();
 
-    Object.keys(rentalData).forEach(key => {
-      if (rentalData[key] !== undefined) {
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = ?`);
-        values.push(rentalData[key]);
+      if (error) {
+        throw error;
       }
-    });
 
-    if (fields.length === 0) {
-      throw new Error('No fields to update');
+      return data;
+    } catch (error) {
+      console.error('Error updating rental:', error);
+      throw error;
     }
-
-    values.push(id);
-
-    await pool.execute(
-      `UPDATE rentals SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      values
-    );
-
-    return this.findById(id);
   }
 
   static async delete(id) {
-    const connection = await pool.getConnection();
-    
     try {
-      await connection.beginTransaction();
+      const { error } = await supabase
+        .from('rentals')
+        .delete()
+        .eq('id', id);
 
-      // Get rental info before deletion
-      const [rental] = await connection.execute(
-        'SELECT locker_id FROM rentals WHERE id = ?',
-        [id]
-      );
-
-      if (rental.length === 0) {
-        throw new Error('Rental not found');
+      if (error) {
+        throw error;
       }
 
-      // Delete rental
-      const [result] = await connection.execute(
-        'DELETE FROM rentals WHERE id = ?',
-        [id]
-      );
-
-      // Update locker status back to available
-      await connection.execute(
-        'UPDATE lockers SET status = ? WHERE id = ?',
-        ['available', rental[0].locker_id]
-      );
-
-      await connection.commit();
-      return result.affectedRows > 0;
+      return true;
     } catch (error) {
-      await connection.rollback();
+      console.error('Error deleting rental:', error);
       throw error;
-    } finally {
-      connection.release();
     }
   }
 
   static async getStats() {
-    const [stats] = await pool.execute(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-        SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-        SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) as total_revenue
-      FROM rentals
-    `);
+    try {
+      const { data: totalRentals, error: totalError } = await supabase
+        .from('rentals')
+        .select('id', { count: 'exact' });
 
-    return stats[0];
+      if (totalError) {
+        throw totalError;
+      }
+
+      const { data: activeRentals, error: activeError } = await supabase
+        .from('rentals')
+        .select('id', { count: 'exact' })
+        .eq('status', 'active');
+
+      if (activeError) {
+        throw activeError;
+      }
+
+      const { data: overdueRentals, error: overdueError } = await supabase
+        .from('rentals')
+        .select('id', { count: 'exact' })
+        .eq('status', 'overdue');
+
+      if (overdueError) {
+        throw overdueError;
+      }
+
+      const { data: completedRentals, error: completedError } = await supabase
+        .from('rentals')
+        .select('id', { count: 'exact' })
+        .eq('status', 'completed');
+
+      if (completedError) {
+        throw completedError;
+      }
+
+      // Calculate total revenue
+      const { data: revenueData, error: revenueError } = await supabase
+        .from('rentals')
+        .select('total_amount')
+        .eq('payment_status', 'paid');
+
+      if (revenueError) {
+        throw revenueError;
+      }
+
+      const totalRevenue = revenueData.reduce((sum, rental) => sum + parseFloat(rental.total_amount), 0);
+
+      return {
+        total: totalRentals.length,
+        active: activeRentals.length,
+        overdue: overdueRentals.length,
+        completed: completedRentals.length,
+        revenue: totalRevenue
+      };
+    } catch (error) {
+      console.error('Error getting rental stats:', error);
+      throw error;
+    }
   }
 
-  static formatRental(row) {
-    return {
-      id: row.id,
-      lockerId: row.locker_id,
-      studentId: row.student_id,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      monthlyPrice: parseFloat(row.monthly_price),
-      totalAmount: parseFloat(row.total_amount),
-      status: row.status,
-      paymentStatus: row.payment_status,
-      notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      locker: row.locker_number ? {
-        id: row.locker_id,
-        number: row.locker_number,
-        location: row.locker_location,
-        size: row.locker_size
-      } : null,
-      student: row.student_name ? {
-        id: row.student_id,
-        name: row.student_name,
-        email: row.student_email,
-        studentId: row.student_student_id
-      } : null
-    };
+  static async findByStudentId(studentId) {
+    try {
+      const { data, error } = await supabase
+        .from('rentals')
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `)
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding rentals by student ID:', error);
+      throw error;
+    }
+  }
+
+  static async findByLockerId(lockerId) {
+    try {
+      const { data, error } = await supabase
+        .from('rentals')
+        .select(`
+          *,
+          students:student_id (
+            id,
+            name,
+            email,
+            student_id
+          ),
+          lockers:locker_id (
+            id,
+            number,
+            location
+          )
+        `)
+        .eq('locker_id', lockerId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding rentals by locker ID:', error);
+      throw error;
+    }
   }
 }
-
-export default Rental;
