@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Package, Eye, EyeOff } from 'lucide-react';
+import { Package, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
+import ForgotPasswordForm from './ForgotPasswordForm';
+import RegisterForm from './RegisterForm';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,10 +20,26 @@ const LoginForm: React.FC = () => {
 
     try {
       await login(email, password);
-    } catch (err) {
-      setError('Credenciais inválidas. Tente novamente.');
+    } catch (err: any) {
+      setError(err.message || 'Credenciais inválidas. Tente novamente.');
     }
   };
+
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
+
+  if (showRegister) {
+    return (
+      <RegisterForm 
+        onBack={() => setShowRegister(false)}
+        onSuccess={() => {
+          setShowRegister(false);
+          alert('Usuário criado com sucesso! Faça login com suas credenciais.');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -85,6 +105,28 @@ const LoginForm: React.FC = () => {
                     ) : (
                       <Eye className="h-5 w-5 text-gray-400" />
                     )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                </div>
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegister(true)}
+                    className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200 flex items-center"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Criar conta
                   </button>
                 </div>
               </div>

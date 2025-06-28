@@ -2,9 +2,10 @@
 
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: 'admin';
+  role: 'admin' | 'user';
+  failedLoginAttempts: number;
+  lockedUntil?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,6 +17,19 @@ export interface Client {
   phone: string;
   document: string;
   address?: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Student {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  studentId: string;
+  course: string;
+  semester: number;
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
@@ -35,7 +49,7 @@ export interface Locker {
 export interface Rental {
   id: string;
   lockerId: string;
-  clientId: string;
+  studentId: string;
   startDate: string;
   endDate: string;
   monthlyPrice: number;
@@ -47,7 +61,7 @@ export interface Rental {
   updatedAt: string;
   // Relations
   locker?: Locker;
-  client?: Client;
+  student?: Student;
 }
 
 export interface Payment {
@@ -68,7 +82,7 @@ export interface DashboardStats {
   maintenanceLockers: number;
   overdueRentals: number;
   monthlyRevenue: number;
-  totalClients: number;
+  totalStudents: number;
   activeRentals: number;
 }
 

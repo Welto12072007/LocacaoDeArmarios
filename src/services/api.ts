@@ -20,6 +20,7 @@ class ApiService {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
       },
+      credentials: 'include', // Include cookies for refresh tokens
       ...options,
     };
 
@@ -40,21 +41,127 @@ class ApiService {
 
   // Auth
   async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    const response = await this.request<ApiResponse<{ user: any; token: string }>>('/auth/login', {
+    const response = await this.request<ApiResponse<{ user: any; accessToken: string }>>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
 
     if (response.success) {
-      localStorage.setItem('auth_token', response.data.token);
+      localStorage.setItem('auth_token', response.data.accessToken);
+      return {
+        user: response.data.user,
+        token: response.data.accessToken
+      };
+    }
+
+    throw new Error(response.message);
+  }
+
+  async register(name: string, email: string, password: string): Promise<{ user: any; token: string }> {
+    const response = await this.request<ApiResponse<{ user: any; accessToken: string }>>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (response.success) {
+      localStorage.setItem('auth_token', response.data.accessToken);
+      return {
+        user: response.data.user,
+        token: response.data.accessToken
+      };
+    }
+
+    throw new Error(response.message);
+  }
+
+  async refreshToken(): Promise<string> {
+    const response = await this.request<ApiResponse<{ accessToken: string }>>('/auth/refresh', {
+      method: 'POST',
+    });
+
+    if (response.success) {
+      localStorage.setItem('auth_token', response.data.accessToken);
+      return response.data.accessToken;
+    }
+
+    throw new Error(response.message);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const response = await this.request<ApiResponse<null>>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.success) {
+      throw new Error(response.message);
+    }
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const response = await this.request<ApiResponse<null>>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+
+    if (!response.success) {
+      throw new Error(response.message);
+    }
+  }
+
+  async validateResetToken(token: string): Promise<void> {
+    const response = await this.request<ApiResponse<null>>(`/auth/validate-reset-token?token=${token}`);
+
+    if (!response.success) {
+      throw new Error(response.message);
+    }
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.request('/auth/logout', { method: 'POST' });
+    } finally {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
+  // Users (Admin only)
+  async getUsers(page = 1, limit = 10): Promise<PaginatedResponse<any>> {
+    const response = await this.request<PaginatedResponse<any>>(`/users?page=${page}&limit=${limit}`);
+    return response;
+  }
+
+  async getUser(id: string): Promise<any> {
+    const response = await this.request<ApiResponse<any>>(`/users/${id}`);
+    
+    if (response.success) {
       return response.data;
     }
 
     throw new Error(response.message);
   }
 
-  async logout(): Promise<void> {
-    localStorage.removeItem('auth_token');
+  async updateUser(id: string, userData: any): Promise<any> {
+    const response = await this.request<ApiResponse<any>>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+
+    if (response.success) {
+      return response.data;
+    }
+
+    throw new Error(response.message);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const response = await this.request<ApiResponse<null>>(`/users/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.success) {
+      throw new Error(response.message);
+    }
   }
 
   // Dashboard
