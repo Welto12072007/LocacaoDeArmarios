@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/auth/LoginForm';
+import ResetPasswordForm from './components/auth/ResetPasswordForm';
 import Dashboard from './components/dashboard/Dashboard';
 import LockerManagement from './components/lockers/LockerManagement';
 import ClientManagement from './components/clients/ClientManagement';
@@ -30,6 +31,24 @@ const AppRouter: React.FC = () => {
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  // Handle password reset
+  if (currentRoute.startsWith('reset-password')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      return (
+        <ResetPasswordForm 
+          token={token} 
+          onSuccess={() => {
+            alert('Senha redefinida com sucesso! Faça login com sua nova senha.');
+            window.location.href = '/';
+          }} 
+        />
+      );
+    }
   }
 
   if (!user) {

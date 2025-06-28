@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 import dashboardRoutes from './routes/dashboard.js';
 import studentRoutes from './routes/students.js';
 import lockerRoutes from './routes/lockers.js';
@@ -23,6 +25,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -32,6 +35,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/lockers', lockerRoutes);
@@ -80,6 +84,14 @@ const startServer = async () => {
       console.log(`🌐 Server running on: http://localhost:${PORT}`);
       console.log(`📊 API available at: http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+      console.log('');
+      console.log('🔐 Authentication Endpoints:');
+      console.log('   POST /api/auth/register - Register new user');
+      console.log('   POST /api/auth/login - Login user');
+      console.log('   POST /api/auth/refresh - Refresh tokens');
+      console.log('   POST /api/auth/forgot-password - Request password reset');
+      console.log('   POST /api/auth/reset-password - Reset password');
+      console.log('   GET  /api/users - List users (admin only)');
       console.log('');
       console.log('📧 Default Admin Credentials:');
       console.log('   Email: admin@lockers.com');
