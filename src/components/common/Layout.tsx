@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
   const navigation = [
     { name: 'Dashboard', href: '#dashboard', icon: Home, current: currentPage === 'dashboard' },
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
-    { name: 'Alunos', href: '#clients', icon: Users, current: currentPage === 'clients' },
+    { name: 'Alunos', href: '#students', icon: Users, current: currentPage === 'students' },
     { name: 'Locações', href: '#rentals', icon: Calendar, current: currentPage === 'rentals' },
     { name: 'Pagamentos', href: '#payments', icon: CreditCard, current: currentPage === 'payments' },
     ...(user?.role === 'admin' ? [
@@ -188,7 +188,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               <h1 className="ml-2 lg:ml-0 text-lg font-semibold text-gray-900 capitalize">
                 {currentPage === 'dashboard' ? 'Dashboard' : 
                  currentPage === 'lockers' ? 'Armários' :
-                 currentPage === 'clients' ? 'Alunos' :
+                 currentPage === 'students' ? 'Alunos' :
                  currentPage === 'rentals' ? 'Locações' :
                  currentPage === 'payments' ? 'Pagamentos' :
                  currentPage === 'users' ? 'Usuários' :

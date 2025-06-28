@@ -4,7 +4,7 @@ import LoginForm from './components/auth/LoginForm';
 import ResetPasswordForm from './components/auth/ResetPasswordForm';
 import Dashboard from './components/dashboard/Dashboard';
 import LockerManagement from './components/lockers/LockerManagement';
-import ClientManagement from './components/clients/ClientManagement';
+import StudentManagement from './components/students/StudentManagement';
 import RentalManagement from './components/rentals/RentalManagement';
 import UserManagement from './components/users/UserManagement';
 
@@ -60,8 +60,8 @@ const AppRouter: React.FC = () => {
   switch (currentRoute) {
     case 'lockers':
       return <LockerManagement />;
-    case 'clients':
-      return <ClientManagement />;
+    case 'students':
+      return <StudentManagement />;
     case 'rentals':
       return <RentalManagement />;
     case 'users':
