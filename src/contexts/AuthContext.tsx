@@ -24,19 +24,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for stored auth token on app load
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // In a real app, validate token with backend
-      // For now, we'll set a mock user if token exists
+      // Try to refresh token and get user info
+      checkAuthStatus();
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      // Try to refresh the token
+      await apiService.refreshToken();
+      
+      // If successful, we should have a valid token
+      // In a real app, you might want to fetch user profile here
       setUser({
         id: '1',
-        name: 'Admin User',
-        email: 'admin@lockers.com',
+        email: 'admin@lockers.com', // This should come from the API
         role: 'admin',
+        failedLoginAttempts: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+    } catch (error) {
+      // Token is invalid, clear it
+      localStorage.removeItem('auth_token');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  };
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);

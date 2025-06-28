@@ -8,7 +8,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  CreditCard
+  CreditCard,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,9 +25,12 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
   const navigation = [
     { name: 'Dashboard', href: '#dashboard', icon: Home, current: currentPage === 'dashboard' },
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
-    { name: 'Clientes', href: '#clients', icon: Users, current: currentPage === 'clients' },
+    { name: 'Alunos', href: '#clients', icon: Users, current: currentPage === 'clients' },
     { name: 'Locações', href: '#rentals', icon: Calendar, current: currentPage === 'rentals' },
     { name: 'Pagamentos', href: '#payments', icon: CreditCard, current: currentPage === 'payments' },
+    ...(user?.role === 'admin' ? [
+      { name: 'Usuários', href: '#users', icon: Shield, current: currentPage === 'users' }
+    ] : []),
     { name: 'Configurações', href: '#settings', icon: Settings, current: currentPage === 'settings' },
   ];
 
@@ -88,13 +92,15 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
-                    {user?.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {user?.email?.split('@')[0].slice(0, 2).toUpperCase() || 'U'}
                   </span>
                 </div>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-base font-medium text-gray-700">{user?.name}</p>
-                <p className="text-sm font-medium text-gray-500">Administrador</p>
+                <p className="text-base font-medium text-gray-700">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-500">
+                  {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
+                </p>
               </div>
               <button
                 onClick={logout}
@@ -141,13 +147,15 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
-                    {user?.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {user?.email?.split('@')[0].slice(0, 2).toUpperCase() || 'U'}
                   </span>
                 </div>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700">{user?.name}</p>
-                <p className="text-xs font-medium text-gray-500">Administrador</p>
+                <p className="text-sm font-medium text-gray-700">{user?.email}</p>
+                <p className="text-xs font-medium text-gray-500">
+                  {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
+                </p>
               </div>
               <button
                 onClick={logout}
@@ -176,9 +184,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
               <h1 className="ml-2 lg:ml-0 text-lg font-semibold text-gray-900 capitalize">
                 {currentPage === 'dashboard' ? 'Dashboard' : 
                  currentPage === 'lockers' ? 'Armários' :
-                 currentPage === 'clients' ? 'Clientes' :
+                 currentPage === 'clients' ? 'Alunos' :
                  currentPage === 'rentals' ? 'Locações' :
                  currentPage === 'payments' ? 'Pagamentos' :
+                 currentPage === 'users' ? 'Usuários' :
                  currentPage === 'settings' ? 'Configurações' : currentPage}
               </h1>
             </div>

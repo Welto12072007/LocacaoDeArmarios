@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Package, Eye, EyeOff } from 'lucide-react';
+import { Package, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import ForgotPasswordForm from './ForgotPasswordForm';
+import RegisterForm from './RegisterForm';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,6 +27,18 @@ const LoginForm: React.FC = () => {
 
   if (showForgotPassword) {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
+
+  if (showRegister) {
+    return (
+      <RegisterForm 
+        onBack={() => setShowRegister(false)}
+        onSuccess={() => {
+          setShowRegister(false);
+          alert('Usuário criado com sucesso! Faça login com suas credenciais.');
+        }}
+      />
+    );
   }
 
   return (
@@ -103,6 +117,16 @@ const LoginForm: React.FC = () => {
                     className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
                   >
                     Esqueceu sua senha?
+                  </button>
+                </div>
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegister(true)}
+                    className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200 flex items-center"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Criar conta
                   </button>
                 </div>
               </div>

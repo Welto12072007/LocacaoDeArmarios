@@ -60,6 +60,7 @@ class User {
 
   static async create(userData) {
     const {
+      name,
       email,
       password,
       role = 'user'

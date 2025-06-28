@@ -6,6 +6,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import LockerManagement from './components/lockers/LockerManagement';
 import ClientManagement from './components/clients/ClientManagement';
 import RentalManagement from './components/rentals/RentalManagement';
+import UserManagement from './components/users/UserManagement';
 
 // Simple router component for demo purposes
 // In a real app, use React Router
@@ -63,6 +64,12 @@ const AppRouter: React.FC = () => {
       return <ClientManagement />;
     case 'rentals':
       return <RentalManagement />;
+    case 'users':
+      // Only admins can access user management
+      if (user.role === 'admin') {
+        return <UserManagement />;
+      }
+      return <Dashboard />;
     case 'dashboard':
     default:
       return <Dashboard />;
