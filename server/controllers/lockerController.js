@@ -4,12 +4,17 @@ export const getLockers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
 
-    const result = await Locker.findAll(page, limit);
+    const result = await Locker.findAll(page, limit, search);
 
     res.json({
       success: true,
-      ...result
+      data: result.lockers,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
     });
   } catch (error) {
     console.error('Get lockers error:', error);
@@ -69,7 +74,7 @@ export const createLocker = async (req, res) => {
       number,
       location,
       size,
-      monthlyPrice,
+      monthly_price: monthlyPrice,
       status
     });
 
@@ -91,6 +96,12 @@ export const updateLocker = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    // Convert monthlyPrice to monthly_price for database
+    if (updateData.monthlyPrice) {
+      updateData.monthly_price = updateData.monthlyPrice;
+      delete updateData.monthlyPrice;
+    }
 
     const locker = await Locker.update(id, updateData);
 

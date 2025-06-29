@@ -1,8 +1,10 @@
 import { supabase } from '../config/database.js';
 
-export class Locker {
-  static async findAll(limit = 50, offset = 0, search = '') {
+export default class Locker {
+  static async findAll(page = 1, limit = 10, search = '') {
     try {
+      const offset = (page - 1) * limit;
+      
       let query = supabase
         .from('lockers')
         .select('*', { count: 'exact' });
@@ -19,7 +21,13 @@ export class Locker {
         throw error;
       }
 
-      return { lockers: data, total: count };
+      return { 
+        lockers: data, 
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      };
     } catch (error) {
       console.error('Error finding all lockers:', error);
       throw error;

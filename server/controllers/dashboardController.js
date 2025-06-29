@@ -7,7 +7,7 @@ export const getDashboardStats = async (req, res) => {
     const [lockerStats, rentalStats, studentStats] = await Promise.all([
       Locker.getStats(),
       Rental.getStats(),
-      Student.findAll(1, 1) // Just to get total count
+      Student.getStats()
     ]);
 
     const stats = {
