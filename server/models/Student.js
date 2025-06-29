@@ -1,8 +1,10 @@
 import { supabase } from '../config/database.js';
 
-export class Student {
-  static async findAll(limit = 50, offset = 0, search = '') {
+export default class Student {
+  static async findAll(page = 1, limit = 10, search = '') {
     try {
+      const offset = (page - 1) * limit;
+      
       let query = supabase
         .from('students')
         .select('*', { count: 'exact' });
@@ -19,7 +21,13 @@ export class Student {
         throw error;
       }
 
-      return { students: data, total: count };
+      return { 
+        students: data, 
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      };
     } catch (error) {
       console.error('Error finding all students:', error);
       throw error;

@@ -4,12 +4,17 @@ export const getStudents = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
 
-    const result = await Student.findAll(page, limit);
+    const result = await Student.findAll(page, limit, search);
 
     res.json({
       success: true,
-      ...result
+      data: result.students,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
     });
   } catch (error) {
     console.error('Get students error:', error);
@@ -80,7 +85,7 @@ export const createStudent = async (req, res) => {
       name,
       email,
       phone,
-      studentId,
+      student_id: studentId,
       course,
       semester,
       status

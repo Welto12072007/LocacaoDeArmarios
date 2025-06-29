@@ -1,8 +1,10 @@
 import { supabase } from '../config/database.js';
 
-export class Rental {
-  static async findAll(limit = 50, offset = 0, search = '') {
+export default class Rental {
+  static async findAll(page = 1, limit = 10, search = '') {
     try {
+      const offset = (page - 1) * limit;
+      
       let query = supabase
         .from('rentals')
         .select(`
@@ -33,7 +35,13 @@ export class Rental {
         throw error;
       }
 
-      return { rentals: data, total: count };
+      return { 
+        rentals: data, 
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      };
     } catch (error) {
       console.error('Error finding all rentals:', error);
       throw error;
@@ -209,7 +217,7 @@ export class Rental {
         active: activeRentals.length,
         overdue: overdueRentals.length,
         completed: completedRentals.length,
-        revenue: totalRevenue
+        total_revenue: totalRevenue
       };
     } catch (error) {
       console.error('Error getting rental stats:', error);
