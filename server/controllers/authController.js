@@ -1,5 +1,5 @@
 import AuthService from '../services/authService.js';
-import User from '../models/User.js';
+import { User } from '../models/User.js';
 import { sendWelcomeEmail } from '../services/emailService.js';
 
 export const register = async (req, res) => {

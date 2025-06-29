@@ -1,6 +1,6 @@
-import Student from '../models/Student.js';
-import Locker from '../models/Locker.js';
-import Rental from '../models/Rental.js';
+import {Student} from '../models/Student.js';
+import { Locker}  from '../models/Locker.js';
+import { Rental} from '../models/Rental.js';
 
 export const getDashboardStats = async (req, res) => {
   try {

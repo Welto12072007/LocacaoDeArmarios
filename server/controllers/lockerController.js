@@ -1,4 +1,4 @@
-import Locker from '../models/Locker.js';
+import {Locker} from '../models/Locker.js';
 
 export const getLockers = async (req, res) => {
   try {

@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+# Ignore pastas e arquivos gerados pelo Bolt
+.bolt/
+bolt.json
+*.bolt.*
+

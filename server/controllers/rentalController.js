@@ -1,4 +1,4 @@
-import Rental from '../models/Rental.js';
+import {Rental} from '../models/Rental.js';
 
 export const getRentals = async (req, res) => {
   try {

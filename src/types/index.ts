@@ -1,6 +1,6 @@
 // Core Types for Locker Management System
 
-export interface User {
+export  default interface User {
   id: string;
   email: string;
   role: 'admin' | 'user';
