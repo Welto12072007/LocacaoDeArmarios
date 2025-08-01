@@ -1,18 +1,38 @@
-import {Locker} from '../models/Locker.js';
+import { Locker } from '../models/Locker.js';
 
-export const getLockers = async (req, res) => {
+export const getArmarios = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const status = req.query.status || '';
 
-    const result = await Locker.findAll(page, limit);
+    const offset = (page - 1) * limit;
+
+    let result;
+    if (status) {
+      const armarios = await Armario.findByStatus(status);
+      result = {
+        armarios: armarios.slice(offset, offset + limit),
+        total: armarios.length
+      };
+    } else {
+      result = await Armario.findAll(limit, offset, search);
+    }
 
     res.json({
       success: true,
-      ...result
+      data: result.armarios,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(result.total / limit),
+        totalItems: result.total,
+        hasNext: page < Math.ceil(result.total / limit),
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
-    console.error('Get lockers error:', error);
+    console.error('Get armarios error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao carregar armários'
@@ -20,12 +40,12 @@ export const getLockers = async (req, res) => {
   }
 };
 
-export const getLocker = async (req, res) => {
+export const getArmario = async (req, res) => {
   try {
     const { id } = req.params;
-    const locker = await Locker.findById(id);
+    const armario = await Armario.findById(id);
 
-    if (!locker) {
+    if (!armario) {
       return res.status(404).json({
         success: false,
         message: 'Armário não encontrado'
@@ -34,10 +54,10 @@ export const getLocker = async (req, res) => {
 
     res.json({
       success: true,
-      data: locker
+      data: armario
     });
   } catch (error) {
-    console.error('Get locker error:', error);
+    console.error('Get armario error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao carregar armário'
@@ -45,41 +65,52 @@ export const getLocker = async (req, res) => {
   }
 };
 
-export const createLocker = async (req, res) => {
+export const createArmario = async (req, res) => {
   try {
-    const { number, location, size, monthlyPrice, status } = req.body;
+    const { numero, localizacao, status, observacoes } = req.body;
 
-    if (!number || !location || !size || !monthlyPrice) {
+    // Validação dos campos obrigatórios
+    if (!numero || !localizacao) {
       return res.status(400).json({
         success: false,
-        message: 'Campos obrigatórios: número, localização, tamanho e preço mensal'
+        message: 'Campos obrigatórios: número e localização'
       });
     }
 
-    // Check if number already exists
-    const existingLocker = await Locker.findByNumber(number);
-    if (existingLocker) {
+    // Validação do status
+    const statusValidos = ['disponível', 'alugado', 'manutenção'];
+    if (status && !statusValidos.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status deve ser: disponível, alugado ou manutenção'
+      });
+    }
+
+    // Verifica se o número já existe
+    const armarioExistente = await Armario.findByNumero(numero);
+    if (armarioExistente) {
       return res.status(409).json({
         success: false,
         message: 'Número do armário já está em uso'
       });
     }
 
-    const locker = await Locker.create({
-      number,
-      location,
-      size,
-      monthlyPrice,
-      status
-    });
+    const armarioData = {
+      numero,
+      localizacao,
+      status: status || 'disponível',
+      observacoes: observacoes || null
+    };
+
+    const armario = await Armario.create(armarioData);
 
     res.status(201).json({
       success: true,
       message: 'Armário criado com sucesso',
-      data: locker
+      data: armario
     });
   } catch (error) {
-    console.error('Create locker error:', error);
+    console.error('Create armario error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao criar armário'
@@ -87,27 +118,55 @@ export const createLocker = async (req, res) => {
   }
 };
 
-export const updateLocker = async (req, res) => {
+export const updateArmario = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { numero, localizacao, status, observacoes } = req.body;
 
-    const locker = await Locker.update(id, updateData);
-
-    if (!locker) {
+    // Verifica se o armário existe
+    const armarioExistente = await Armario.findById(id);
+    if (!armarioExistente) {
       return res.status(404).json({
         success: false,
         message: 'Armário não encontrado'
       });
     }
 
+    // Se o número foi alterado, verifica se o novo número já existe
+    if (numero && numero !== armarioExistente.numero) {
+      const armarioComNumero = await Armario.findByNumero(numero);
+      if (armarioComNumero) {
+        return res.status(409).json({
+          success: false,
+          message: 'Número do armário já está em uso'
+        });
+      }
+    }
+
+    // Validação do status
+    const statusValidos = ['disponível', 'alugado', 'manutenção'];
+    if (status && !statusValidos.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status deve ser: disponível, alugado ou manutenção'
+      });
+    }
+
+    const updateData = {};
+    if (numero) updateData.numero = numero;
+    if (localizacao) updateData.localizacao = localizacao;
+    if (status) updateData.status = status;
+    if (observacoes !== undefined) updateData.observacoes = observacoes;
+
+    const armario = await Armario.update(id, updateData);
+
     res.json({
       success: true,
       message: 'Armário atualizado com sucesso',
-      data: locker
+      data: armario
     });
   } catch (error) {
-    console.error('Update locker error:', error);
+    console.error('Update armario error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao atualizar armário'
@@ -115,11 +174,19 @@ export const updateLocker = async (req, res) => {
   }
 };
 
-export const deleteLocker = async (req, res) => {
+export const deleteArmario = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deleted = await Locker.delete(id);
+    const armarioExistente = await Armario.findById(id);
+    if (!armarioExistente) {
+      return res.status(404).json({
+        success: false,
+        message: 'Armário não encontrado'
+      });
+    }
+
+    const deleted = await Armario.delete(id);
 
     if (!deleted) {
       return res.status(404).json({
@@ -133,10 +200,44 @@ export const deleteLocker = async (req, res) => {
       message: 'Armário excluído com sucesso'
     });
   } catch (error) {
-    console.error('Delete locker error:', error);
+    console.error('Delete armario error:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao excluir armário'
+    });
+  }
+};
+
+export const getArmarioStats = async (req, res) => {
+  try {
+    const stats = await Armario.getStats();
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get armario stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao carregar estatísticas dos armários'
+    });
+  }
+};
+
+export const getArmariosDisponiveis = async (req, res) => {
+  try {
+    const armarios = await Armario.findDisponiveis();
+
+    res.json({
+      success: true,
+      data: armarios
+    });
+  } catch (error) {
+    console.error('Get armarios disponiveis error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao carregar armários disponíveis'
     });
   }
 };

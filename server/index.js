@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
-// Import routes
+
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import dashboardRoutes from './routes/dashboard.js';
