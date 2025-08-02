@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Package, MapPin, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Package } from 'lucide-react';
 import Layout from '../common/Layout';
 import Button from '../common/Button';
 import Table from '../common/Table';
 import { Locker } from '../../types';
 import { apiService } from '../../services/api';
+import LockerModal from './LockerModal'; // importe o modal criado
 
 const LockerManagement: React.FC = () => {
   const [lockers, setLockers] = useState<Locker[]>([]);
@@ -13,9 +14,21 @@ const LockerManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  const [countAvailable, setCountAvailable] = useState(0);
+  const [countRented, setCountRented] = useState(0);
+  const [countMaintenance, setCountMaintenance] = useState(0);
+
+  // Modal control
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingLocker, setEditingLocker] = useState<Locker | null>(null);
+
   useEffect(() => {
     loadLockers();
   }, [currentPage]);
+
+  useEffect(() => {
+    loadLockerStats();
+  }, []);
 
   const loadLockers = async () => {
     try {
@@ -25,46 +38,41 @@ const LockerManagement: React.FC = () => {
       setTotalPages(response.totalPages);
       setTotal(response.total);
     } catch (error) {
-      console.error('Error loading lockers:', error);
+      console.error('Erro ao carregar armários:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: Locker['status']) => {
-    const statusConfig = {
-      available: { color: 'bg-green-100 text-green-800', label: 'Disponível' },
-      rented: { color: 'bg-blue-100 text-blue-800', label: 'Locado' },
-      maintenance: { color: 'bg-yellow-100 text-yellow-800', label: 'Manutenção' },
-      reserved: { color: 'bg-purple-100 text-purple-800', label: 'Reservado' },
-    };
+  const loadLockerStats = async () => {
+    try {
+      const response = await apiService.getLockers(1, 1000);
+      const lockersAll = response.data;
 
-    const config = statusConfig[status];
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
-        {config.label}
-      </span>
-    );
+      setCountAvailable(lockersAll.filter(l => l.status === 'disponível').length);
+      setCountRented(lockersAll.filter(l => l.status === 'alugado').length);
+      setCountMaintenance(lockersAll.filter(l => l.status === 'manutenção').length);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de armários:', error);
+    }
   };
 
-  const getSizeBadge = (size: Locker['size']) => {
-    const sizeConfig = {
-      small: { color: 'bg-gray-100 text-gray-800', label: 'Pequeno' },
-      medium: { color: 'bg-blue-100 text-blue-800', label: 'Médio' },
-      large: { color: 'bg-indigo-100 text-indigo-800', label: 'Grande' },
+  const getStatusBadge = (status: Locker['status']) => {
+    const map = {
+      'disponível': 'bg-green-100 text-green-800',
+      'alugado': 'bg-blue-100 text-blue-800',
+      'manutenção': 'bg-yellow-100 text-yellow-800',
     };
-
-    const config = sizeConfig[size];
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
-        {config.label}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${map[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
   const columns = [
     {
-      key: 'number',
+      key: 'numero',
       label: 'Número',
       sortable: true,
       render: (value: string) => (
@@ -75,7 +83,7 @@ const LockerManagement: React.FC = () => {
       ),
     },
     {
-      key: 'location',
+      key: 'localizacao',
       label: 'Localização',
       render: (value: string) => (
         <div className="flex items-center">
@@ -85,35 +93,28 @@ const LockerManagement: React.FC = () => {
       ),
     },
     {
-      key: 'size',
-      label: 'Tamanho',
-      render: (value: Locker['size']) => getSizeBadge(value),
-    },
-    {
       key: 'status',
       label: 'Status',
       render: (value: Locker['status']) => getStatusBadge(value),
     },
     {
-      key: 'monthlyPrice',
-      label: 'Preço Mensal',
-      render: (value: number) => (
-        <div className="flex items-center">
-          <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-          <span>R$ {value.toLocaleString('pt-BR')}</span>
-        </div>
-      ),
+      key: 'observacoes',
+      label: 'Observações',
+      render: (value: string) => <span className="text-sm text-gray-700">{value || '—'}</span>,
     },
     {
       key: 'actions',
       label: 'Ações',
-      render: (value: any, row: Locker) => (
+      render: (_: any, row: Locker) => (
         <div className="flex space-x-2">
           <Button
             variant="ghost"
             size="sm"
             icon={Edit}
-            onClick={() => handleEdit(row.id)}
+            onClick={() => {
+              setEditingLocker(row);
+              setModalOpen(true);
+            }}
           />
           <Button
             variant="ghost"
@@ -128,23 +129,33 @@ const LockerManagement: React.FC = () => {
   ];
 
   const handleAdd = () => {
-    console.log('Add new locker');
-    // In a real app, open modal or navigate to form
+    setEditingLocker(null);
+    setModalOpen(true);
   };
 
-  const handleEdit = (id: string) => {
-    console.log('Edit locker:', id);
-    // In a real app, open modal or navigate to form
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Tem certeza que deseja excluir este armário?')) {
       try {
-        await apiService.deleteLocker(id);
-        loadLockers();
+        await apiService.deleteLocker(id.toString());
+        await loadLockers();
+        await loadLockerStats();
       } catch (error) {
-        console.error('Error deleting locker:', error);
+        console.error('Erro ao excluir armário:', error);
       }
+    }
+  };
+
+  const handleSave = async (lockerData: Omit<Locker, 'id' | 'createdAt' | 'updatedAt'>, id?: number) => {
+    try {
+      if (id) {
+        await apiService.updateLocker(id.toString(), lockerData);
+      } else {
+        await apiService.createLocker(lockerData);
+      }
+      await loadLockers();
+      await loadLockerStats();
+    } catch (error) {
+      console.error('Erro ao salvar armário:', error);
     }
   };
 
@@ -173,7 +184,7 @@ const LockerManagement: React.FC = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Disponíveis</dt>
-                    <dd className="text-lg font-medium text-gray-900">45</dd>
+                    <dd className="text-lg font-medium text-gray-900">{countAvailable}</dd>
                   </dl>
                 </div>
               </div>
@@ -189,7 +200,7 @@ const LockerManagement: React.FC = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Locados</dt>
-                    <dd className="text-lg font-medium text-gray-900">98</dd>
+                    <dd className="text-lg font-medium text-gray-900">{countRented}</dd>
                   </dl>
                 </div>
               </div>
@@ -205,7 +216,7 @@ const LockerManagement: React.FC = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Manutenção</dt>
-                    <dd className="text-lg font-medium text-gray-900">7</dd>
+                    <dd className="text-lg font-medium text-gray-900">{countMaintenance}</dd>
                   </dl>
                 </div>
               </div>
@@ -221,7 +232,7 @@ const LockerManagement: React.FC = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Total</dt>
-                    <dd className="text-lg font-medium text-gray-900">150</dd>
+                    <dd className="text-lg font-medium text-gray-900">{total}</dd>
                   </dl>
                 </div>
               </div>
@@ -240,6 +251,14 @@ const LockerManagement: React.FC = () => {
             total,
             onPageChange: setCurrentPage,
           }}
+        />
+
+        {/* Modal para adicionar/editar */}
+        <LockerModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSave={handleSave}
+          initialData={editingLocker}
         />
       </div>
     </Layout>

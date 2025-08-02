@@ -11,13 +11,13 @@ export const getArmarios = async (req, res) => {
 
     let result;
     if (status) {
-      const armarios = await Armario.findByStatus(status);
+      const armarios = await Locker.findByStatus(status);
       result = {
         armarios: armarios.slice(offset, offset + limit),
         total: armarios.length
       };
     } else {
-      result = await Armario.findAll(limit, offset, search);
+      result = await Locker.findAll(limit, offset, search);
     }
 
     res.json({
@@ -43,7 +43,7 @@ export const getArmarios = async (req, res) => {
 export const getArmario = async (req, res) => {
   try {
     const { id } = req.params;
-    const armario = await Armario.findById(id);
+    const armario = await Locker.findById(id);
 
     if (!armario) {
       return res.status(404).json({
@@ -69,7 +69,6 @@ export const createArmario = async (req, res) => {
   try {
     const { numero, localizacao, status, observacoes } = req.body;
 
-    // Validação dos campos obrigatórios
     if (!numero || !localizacao) {
       return res.status(400).json({
         success: false,
@@ -77,7 +76,6 @@ export const createArmario = async (req, res) => {
       });
     }
 
-    // Validação do status
     const statusValidos = ['disponível', 'alugado', 'manutenção'];
     if (status && !statusValidos.includes(status)) {
       return res.status(400).json({
@@ -86,8 +84,7 @@ export const createArmario = async (req, res) => {
       });
     }
 
-    // Verifica se o número já existe
-    const armarioExistente = await Armario.findByNumero(numero);
+    const armarioExistente = await Locker.findByNumero(numero);
     if (armarioExistente) {
       return res.status(409).json({
         success: false,
@@ -102,7 +99,7 @@ export const createArmario = async (req, res) => {
       observacoes: observacoes || null
     };
 
-    const armario = await Armario.create(armarioData);
+    const armario = await Locker.create(armarioData);
 
     res.status(201).json({
       success: true,
@@ -123,8 +120,7 @@ export const updateArmario = async (req, res) => {
     const { id } = req.params;
     const { numero, localizacao, status, observacoes } = req.body;
 
-    // Verifica se o armário existe
-    const armarioExistente = await Armario.findById(id);
+    const armarioExistente = await Locker.findById(id);
     if (!armarioExistente) {
       return res.status(404).json({
         success: false,
@@ -132,9 +128,8 @@ export const updateArmario = async (req, res) => {
       });
     }
 
-    // Se o número foi alterado, verifica se o novo número já existe
     if (numero && numero !== armarioExistente.numero) {
-      const armarioComNumero = await Armario.findByNumero(numero);
+      const armarioComNumero = await Locker.findByNumero(numero);
       if (armarioComNumero) {
         return res.status(409).json({
           success: false,
@@ -143,7 +138,6 @@ export const updateArmario = async (req, res) => {
       }
     }
 
-    // Validação do status
     const statusValidos = ['disponível', 'alugado', 'manutenção'];
     if (status && !statusValidos.includes(status)) {
       return res.status(400).json({
@@ -158,7 +152,7 @@ export const updateArmario = async (req, res) => {
     if (status) updateData.status = status;
     if (observacoes !== undefined) updateData.observacoes = observacoes;
 
-    const armario = await Armario.update(id, updateData);
+    const armario = await Locker.update(id, updateData);
 
     res.json({
       success: true,
@@ -178,7 +172,7 @@ export const deleteArmario = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const armarioExistente = await Armario.findById(id);
+    const armarioExistente = await Locker.findById(id);
     if (!armarioExistente) {
       return res.status(404).json({
         success: false,
@@ -186,7 +180,7 @@ export const deleteArmario = async (req, res) => {
       });
     }
 
-    const deleted = await Armario.delete(id);
+    const deleted = await Locker.delete(id);
 
     if (!deleted) {
       return res.status(404).json({
@@ -210,7 +204,7 @@ export const deleteArmario = async (req, res) => {
 
 export const getArmarioStats = async (req, res) => {
   try {
-    const stats = await Armario.getStats();
+    const stats = await Locker.getStats();
 
     res.json({
       success: true,
@@ -227,7 +221,7 @@ export const getArmarioStats = async (req, res) => {
 
 export const getArmariosDisponiveis = async (req, res) => {
   try {
-    const armarios = await Armario.findDisponiveis();
+    const armarios = await Locker.findDisponiveis();
 
     res.json({
       success: true,

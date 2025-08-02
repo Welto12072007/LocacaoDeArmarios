@@ -36,14 +36,12 @@ export interface Student {
 }
 
 export interface Locker {
-  id: string;
-  number: string;
-  location: string;
-  size: 'small' | 'medium' | 'large';
-  status: 'available' | 'rented' | 'maintenance' | 'reserved';
-  monthlyPrice: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  numero: string;
+  localizacao: string;
+  status: 'disponível' | 'alugado' | 'manutenção';
+  observacoes?: string;
+  criado_em?: string;
 }
 
 export interface Rental {
