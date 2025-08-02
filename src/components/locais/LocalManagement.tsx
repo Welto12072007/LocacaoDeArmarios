@@ -4,7 +4,7 @@ import Layout from '../common/Layout';
 import Button from '../common/Button';
 import Table from '../common/Table';
 
-const API_BASE = 'http://localhost:3001/api'; // ✅ ajuste aqui
+const API_BASE = 'http://localhost:3001/api';
 
 type Local = {
   id: number;
