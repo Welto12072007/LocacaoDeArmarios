@@ -9,7 +9,8 @@ import {
   Menu, 
   X,
   CreditCard,
-  Shield
+  Shield,
+  MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -27,6 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
     { name: 'Alunos', href: '#students', icon: Users, current: currentPage === 'students' },
     { name: 'Locações', href: '#rentals', icon: Calendar, current: currentPage === 'rentals' },
+    { name: 'Locais', href: '#locations', icon: MapPin, current: currentPage === 'locations' },
     { name: 'Pagamentos', href: '#payments', icon: CreditCard, current: currentPage === 'payments' },
     ...(user?.role === 'admin' ? [
       { name: 'Usuários', href: '#users', icon: Shield, current: currentPage === 'users' }
