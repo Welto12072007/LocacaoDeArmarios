@@ -62,6 +62,14 @@ export interface Rental {
   student?: Student;
 }
 
+export interface Local {
+  id: string;
+  nome: string;
+  descricao?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Payment {
   id: string;
   rentalId: string;

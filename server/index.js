@@ -12,6 +12,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import studentRoutes from './routes/students.js';
 import lockerRoutes from './routes/lockers.js';
 import rentalRoutes from './routes/rentals.js';
+import locaisRoutes from './routes/locais.js';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/lockers', lockerRoutes);
 app.use('/api/rentals', rentalRoutes);
+app.use('/api/locais', locaisRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -4,7 +4,8 @@ import {
   Rental,  
   DashboardStats, 
   ApiResponse, 
-  PaginatedResponse 
+  PaginatedResponse,
+  Local
 } from '../types';
 
 class ApiService {
@@ -295,6 +296,43 @@ class ApiService {
     return this.request<ApiResponse<null>>(`/rentals/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getLocais(page = 1, limit = 10): Promise<PaginatedResponse<Local>> {
+    const response = await this.request<PaginatedResponse<Local>>(`/locais?page=${page}&limit=${limit}`);
+    return response;
+  }
+
+  async getLocal(id: string): Promise<Local> {
+    const response = await this.request<ApiResponse<Local>>(`/locais/${id}`);
+
+    if (response.success) {
+      return response.data;
+    }
+    throw new Error(response.message);
+  }
+
+  async createLocal(local: { nome: string; descricao?: string }): Promise<ApiResponse<Local>> {
+    const response = await this.request<ApiResponse<Local>>('/locais', {
+      method: 'POST',
+      body: JSON.stringify(local),
+    });
+    return response;
+  }
+
+  async updateLocal(id: string, local: { nome: string; descricao?: string }): Promise<ApiResponse<Local>> {
+    const response = await this.request<ApiResponse<Local>>(`/locais/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(local),
+    });
+    return response;
+  }
+
+  async deleteLocal(id: string): Promise<ApiResponse<null>> {
+    const response = await this.request<ApiResponse<null>>(`/locais/${id}`, {
+      method: 'DELETE',
+    });
+    return response;
   }
 }
 
