@@ -155,9 +155,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBack, onSuccess }) => {
                     )}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Mínimo de 8 caracteres
-                </p>
+                <div className="mt-2 text-xs text-gray-500">
+                  <p className="font-medium mb-1">Requisitos da senha:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Mínimo de 8 caracteres</li>
+                    <li>Pelo menos 1 letra maiúscula</li>
+                    <li>Pelo menos 1 número</li>
+                    <li>Pelo menos 1 caractere especial (!@#$%^&*)</li>
+                  </ul>
+                </div>
               </div>
 
               <div>

@@ -146,16 +146,6 @@ const LoginForm: React.FC = () => {
                 Entrar
               </Button>
             </div>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-md">
-              <p className="text-sm text-gray-600 text-center mb-2">
-                <strong>Credenciais de demonstração:</strong>
-              </p>
-              <p className="text-xs text-gray-500 text-center">
-                Email: admin@lockers.com<br />
-                Senha: admin123
-              </p>
-            </div>
           </div>
         </form>
       </div>
