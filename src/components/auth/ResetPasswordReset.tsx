@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Lock, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock } from 'lucide-react';
 import Button from '../common/Button';
 import { apiService } from '../../services/api';
 
