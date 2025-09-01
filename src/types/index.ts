@@ -36,14 +36,12 @@ export interface Student {
 }
 
 export interface Locker {
-  id: string;
-  number: string;
-  location: string;
-  size: 'small' | 'medium' | 'large';
-  status: 'available' | 'rented' | 'maintenance' | 'reserved';
-  monthlyPrice: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  numero: string;
+  localizacao: string;
+  status: 'disponível' | 'alugado' | 'manutenção';
+  observacoes?: string;
+  criado_em?: string;
 }
 
 export interface Rental {
@@ -62,6 +60,14 @@ export interface Rental {
   // Relations
   locker?: Locker;
   student?: Student;
+}
+
+export interface Local {
+  id: string;
+  nome: string;
+  descricao?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Payment {

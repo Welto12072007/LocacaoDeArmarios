@@ -4,24 +4,24 @@ export class Locker {
   static async findAll(limit = 50, offset = 0, search = '') {
     try {
       let query = supabase
-        .from('lockers')
+        .from('armarios')
         .select('*', { count: 'exact' });
 
       if (search) {
-        query = query.or(`number.ilike.%${search}%,location.ilike.%${search}%`);
+        query = query.or(`numero.ilike.%${search}%,localizacao.ilike.%${search}%`);
       }
 
       const { data, error, count } = await query
         .range(offset, offset + limit - 1)
-        .order('number', { ascending: true });
+        .order('numero', { ascending: true });
 
       if (error) {
         throw error;
       }
 
-      return { lockers: data, total: count };
+      return { armarios: data, total: count };
     } catch (error) {
-      console.error('Error finding all lockers:', error);
+      console.error('Error finding all armarios:', error);
       throw error;
     }
   }
@@ -29,7 +29,7 @@ export class Locker {
   static async findById(id) {
     try {
       const { data, error } = await supabase
-        .from('lockers')
+        .from('armarios')
         .select('*')
         .eq('id', id)
         .single();
@@ -40,17 +40,17 @@ export class Locker {
 
       return data;
     } catch (error) {
-      console.error('Error finding locker by ID:', error);
+      console.error('Error finding armario by ID:', error);
       throw error;
     }
   }
 
-  static async findByNumber(number) {
+  static async findByNumero(numero) {
     try {
       const { data, error } = await supabase
-        .from('lockers')
+        .from('armarios')
         .select('*')
-        .eq('number', number)
+        .eq('numero', numero)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -59,16 +59,16 @@ export class Locker {
 
       return data;
     } catch (error) {
-      console.error('Error finding locker by number:', error);
+      console.error('Error finding armario by numero:', error);
       throw error;
     }
   }
 
-  static async create(lockerData) {
+  static async create(armarioData) {
     try {
       const { data, error } = await supabase
-        .from('lockers')
-        .insert([lockerData])
+        .from('armarios')
+        .insert([armarioData])
         .select()
         .single();
 
@@ -78,16 +78,16 @@ export class Locker {
 
       return data;
     } catch (error) {
-      console.error('Error creating locker:', error);
+      console.error('Error creating armario:', error);
       throw error;
     }
   }
 
-  static async update(id, lockerData) {
+  static async update(id, armarioData) {
     try {
       const { data, error } = await supabase
-        .from('lockers')
-        .update(lockerData)
+        .from('armarios')
+        .update(armarioData)
         .eq('id', id)
         .select()
         .single();
@@ -98,7 +98,7 @@ export class Locker {
 
       return data;
     } catch (error) {
-      console.error('Error updating locker:', error);
+      console.error('Error updating armario:', error);
       throw error;
     }
   }
@@ -106,7 +106,7 @@ export class Locker {
   static async delete(id) {
     try {
       const { error } = await supabase
-        .from('lockers')
+        .from('armarios')
         .delete()
         .eq('id', id);
 
@@ -116,67 +116,67 @@ export class Locker {
 
       return true;
     } catch (error) {
-      console.error('Error deleting locker:', error);
+      console.error('Error deleting armario:', error);
       throw error;
     }
   }
 
   static async getStats() {
     try {
-      const { data: totalLockers, error: totalError } = await supabase
-        .from('lockers')
+      const { data: totalArmarios, error: totalError } = await supabase
+        .from('armarios')
         .select('id', { count: 'exact' });
 
       if (totalError) {
         throw totalError;
       }
 
-      const { data: availableLockers, error: availableError } = await supabase
-        .from('lockers')
+      const { data: disponiveis, error: disponiveisError } = await supabase
+        .from('armarios')
         .select('id', { count: 'exact' })
-        .eq('status', 'available');
+        .eq('status', 'disponível');
 
-      if (availableError) {
-        throw availableError;
+      if (disponiveisError) {
+        throw disponiveisError;
       }
 
-      const { data: rentedLockers, error: rentedError } = await supabase
-        .from('lockers')
+      const { data: alugados, error: alugadosError } = await supabase
+        .from('armarios')
         .select('id', { count: 'exact' })
-        .eq('status', 'rented');
+        .eq('status', 'alugado');
 
-      if (rentedError) {
-        throw rentedError;
+      if (alugadosError) {
+        throw alugadosError;
       }
 
-      const { data: maintenanceLockers, error: maintenanceError } = await supabase
-        .from('lockers')
+      const { data: manutencao, error: manutencaoError } = await supabase
+        .from('armarios')
         .select('id', { count: 'exact' })
-        .eq('status', 'maintenance');
+        .eq('status', 'manutenção');
 
-      if (maintenanceError) {
-        throw maintenanceError;
+      if (manutencaoError) {
+        throw manutencaoError;
       }
 
       return {
-        total: totalLockers.length,
-        available: availableLockers.length,
-        rented: rentedLockers.length,
-        maintenance: maintenanceLockers.length
+        total: totalArmarios.length,
+        disponivel: disponiveis.length,
+        alugado: alugados.length,
+        manutencao: manutencao.length
       };
     } catch (error) {
-      console.error('Error getting locker stats:', error);
+      console.error('Error getting armario stats:', error);
       throw error;
     }
   }
 
-  static async findAvailable() {
+  static async findDisponiveis() {
     try {
       const { data, error } = await supabase
-        .from('lockers')
+        .from('armarios')
         .select('*')
-        .eq('status', 'available')
-        .order('number', { ascending: true });
+        .eq('status', 'disponível')
+        .order('numero', { ascending: true });
 
       if (error) {
         throw error;
@@ -184,7 +184,26 @@ export class Locker {
 
       return data;
     } catch (error) {
-      console.error('Error finding available lockers:', error);
+      console.error('Error finding available armarios:', error);
+      throw error;
+    }
+  }
+
+  static async findByStatus(status) {
+    try {
+      const { data, error } = await supabase
+        .from('armarios')
+        .select('*')
+        .eq('status', status)
+        .order('numero', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding armarios by status:', error);
       throw error;
     }
   }
