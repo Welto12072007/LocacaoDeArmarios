@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { UserPlus, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import Button from '../common/Button';
 import { apiService } from '../../services/api';
+import LogoCimol from '../../assets/LogoCimol.png';
 
 interface RegisterFormProps {
   onBack: () => void;
@@ -64,7 +65,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBack, onSuccess }) => {
         <div>
           <div className="flex justify-center">
             <div className="flex items-center">
-              <UserPlus className="h-12 w-12 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-12 w-12" />
               <span className="ml-2 text-3xl font-bold text-gray-900">LockerSys</span>
             </div>
           </div>

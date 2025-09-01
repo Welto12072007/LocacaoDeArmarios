@@ -6,7 +6,6 @@ import Dashboard from './components/dashboard/Dashboard';
 import LockerManagement from './components/lockers/LockerManagement';
 import StudentManagement from './components/students/StudentManagement';
 import RentalManagement from './components/rentals/RentalManagement';
-import UserManagement from './components/users/UserManagement';
 import LocalManagement from './components/locais/LocalManagement';
 
 
@@ -75,13 +74,7 @@ const AppRouter: React.FC = () => {
     case 'rentals':
       return <RentalManagement />;
     case 'locations':
-  return <LocalManagement />;
-    case 'users':
-      // Only admins can access user management
-      if (user.role === 'admin') {
-        return <UserManagement />;
-      }
-      return <Dashboard />;
+      return <LocalManagement />;
     case 'dashboard':
     default:
       return <Dashboard />;

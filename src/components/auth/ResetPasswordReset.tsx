@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import Button from '../common/Button';
 import { apiService } from '../../services/api';
+import LogoCimol from '../../assets/LogoCimol.png';
 
 interface ResetPasswordFormProps {
   token: string;
@@ -100,7 +101,7 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess 
         <div>
           <div className="flex justify-center">
             <div className="flex items-center">
-              <Lock className="h-12 w-12 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-12 w-12" />
               <span className="ml-2 text-3xl font-bold text-gray-900">LockerSys</span>
             </div>
           </div>
