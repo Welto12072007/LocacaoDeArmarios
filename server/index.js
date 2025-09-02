@@ -1,17 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase } from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Configure dotenv to look for .env file in the project root
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -20,6 +13,9 @@ import studentRoutes from './routes/students.js';
 import lockerRoutes from './routes/lockers.js';
 import rentalRoutes from './routes/rentals.js';
 import locaisRoutes from './routes/locais.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
