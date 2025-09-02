@@ -2,9 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initializeDatabase } from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure dotenv to look for .env file in the project root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -13,8 +20,6 @@ import studentRoutes from './routes/students.js';
 import lockerRoutes from './routes/lockers.js';
 import rentalRoutes from './routes/rentals.js';
 import locaisRoutes from './routes/locais.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +51,16 @@ app.use('/api/students', studentRoutes);
 app.use('/api/lockers', lockerRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/locais', locaisRoutes);
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.resolve(__dirname, '../dist')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+  });
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

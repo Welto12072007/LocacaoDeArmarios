@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Button from '../common/Button';
 import { apiService } from '../../services/api';
+import LogoCimol from '../../assets/LogoCimol.png';
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
@@ -35,7 +36,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
         <div>
           <div className="flex justify-center">
             <div className="flex items-center">
-              <Mail className="h-12 w-12 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-12 w-12" />
               <span className="ml-2 text-3xl font-bold text-gray-900">LockerSys</span>
             </div>
           </div>

@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure dotenv to look for .env file in the project root
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;

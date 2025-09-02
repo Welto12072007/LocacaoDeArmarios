@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Package, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import ForgotPasswordForm from './ForgotPasswordForm';
 import RegisterForm from './RegisterForm';
+import LogoCimol from '../../assets/LogoCimol.png';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -47,7 +48,7 @@ const LoginForm: React.FC = () => {
         <div>
           <div className="flex justify-center">
             <div className="flex items-center">
-              <Package className="h-12 w-12 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-12 w-12" />
               <span className="ml-2 text-3xl font-bold text-gray-900">LockerSys</span>
             </div>
           </div>

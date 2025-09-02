@@ -4,15 +4,13 @@ import {
   Package, 
   Users, 
   Calendar, 
-  Settings, 
   LogOut, 
   Menu, 
   X,
-  CreditCard,
-  Shield,
   MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import LogoCimol from '../../assets/LogoCimol.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,17 +21,23 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
+  // Função para abreviar email longo
+  const truncateEmail = (email: string, maxLength: number = 20) => {
+    if (email.length <= maxLength) return email;
+    
+    const [localPart, domain] = email.split('@');
+    if (localPart.length > maxLength - domain.length - 4) {
+      return `${localPart.slice(0, maxLength - domain.length - 4)}...@${domain}`;
+    }
+    return email;
+  };
+
   const navigation = [
     { name: 'Dashboard', href: '#dashboard', icon: Home, current: currentPage === 'dashboard' },
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
     { name: 'Alunos', href: '#students', icon: Users, current: currentPage === 'students' },
     { name: 'Locações', href: '#rentals', icon: Calendar, current: currentPage === 'rentals' },
     { name: 'Locais', href: '#locations', icon: MapPin, current: currentPage === 'locations' },
-    { name: 'Pagamentos', href: '#payments', icon: CreditCard, current: currentPage === 'payments' },
-    ...(user?.role === 'admin' ? [
-      { name: 'Usuários', href: '#users', icon: Shield, current: currentPage === 'users' }
-    ] : []),
-    { name: 'Configurações', href: '#settings', icon: Settings, current: currentPage === 'settings' },
   ];
 
   const handleNavigation = (href: string) => {
@@ -66,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
           
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <Package className="h-8 w-8 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-8 w-8" />
               <span className="ml-2 text-xl font-bold text-gray-900">LockerSys</span>
             </div>
             <nav className="mt-5 px-2 space-y-1">
@@ -98,8 +102,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
                   </span>
                 </div>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-base font-medium text-gray-700">{user?.email}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-base font-medium text-gray-700 truncate" title={user?.email}>
+                  {user?.email ? truncateEmail(user.email, 18) : ''}
+                </p>
                 <p className="text-sm font-medium text-gray-500">
                   {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </p>
@@ -121,7 +127,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
         <div className="flex flex-col h-0 flex-1 border-r border-gray-200 bg-white">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4">
-              <Package className="h-8 w-8 text-blue-600" />
+              <img src={LogoCimol} alt="Logo Cimol" className="h-8 w-8" />
               <span className="ml-2 text-xl font-bold text-gray-900">LockerSys</span>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
@@ -153,8 +159,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
                   </span>
                 </div>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700">{user?.email}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-700 truncate" title={user?.email}>
+                  {user?.email ? truncateEmail(user.email, 16) : ''}
+                </p>
                 <p className="text-xs font-medium text-gray-500">
                   {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </p>
@@ -188,9 +196,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
                  currentPage === 'lockers' ? 'Armários' :
                  currentPage === 'students' ? 'Alunos' :
                  currentPage === 'rentals' ? 'Locações' :
-                 currentPage === 'payments' ? 'Pagamentos' :
-                 currentPage === 'users' ? 'Usuários' :
-                 currentPage === 'settings' ? 'Configurações' : currentPage}
+                 currentPage === 'locations' ? 'Locais' : currentPage}
               </h1>
             </div>
 
