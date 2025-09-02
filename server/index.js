@@ -26,7 +26,7 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, /\.railway\.app$/]
+    ? ['https://locacaodearmarios-production.up.railway.app', /\.railway\.app$/]
     : process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
@@ -53,16 +53,6 @@ app.use('/api/lockers', lockerRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/locais', locaisRoutes);
 
-// Serve static files from React build in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.resolve(__dirname, '../dist')));
-  
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
-  });
-}
-
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
@@ -73,6 +63,16 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0'
   });
 });
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.resolve(__dirname, '../dist')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
