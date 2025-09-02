@@ -3,15 +3,8 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import Layout from '../common/Layout';
 import Button from '../common/Button';
 import Table from '../common/Table';
-
-const API_BASE = 'http://localhost:3001/api';
-
-type Local = {
-  id: number;
-  nome: string;
-  descricao?: string;
-  criado_em: string;
-};
+import { apiService } from '../../services/api';
+import { Local } from '../../types';
 
 const LocalManagement: React.FC = () => {
   const [locais, setLocais] = useState<Local[]>([]);
@@ -25,7 +18,7 @@ const LocalManagement: React.FC = () => {
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadLocais();
@@ -34,9 +27,7 @@ const LocalManagement: React.FC = () => {
   const loadLocais = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/locais?page=${currentPage}&limit=10`);
-      if (!response.ok) throw new Error('Erro ao carregar locais');
-      const result = await response.json();
+      const result = await apiService.getLocais(currentPage, 10);
       setLocais(result.data);
       setTotalPages(result.totalPages);
       setTotal(result.total);
@@ -55,12 +46,10 @@ const LocalManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = async (id: number) => {
+  const handleEdit = async (id: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/locais/${id}`);
-      if (!response.ok) throw new Error('Local não encontrado');
-      const local = await response.json();
+      const local = await apiService.getLocal(id);
       setEditingId(id);
       setNome(local.nome || '');
       setDescricao(local.descricao || '');
@@ -81,26 +70,11 @@ const LocalManagement: React.FC = () => {
 
     try {
       setSaving(true);
-      const method = editingId ? 'PUT' : 'POST';
-      const url = editingId
-        ? `${API_BASE}/locais/${editingId}`
-        : `${API_BASE}/locais`;
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, descricao }),
-      });
-
-      if (!response.ok) {
-        let errMsg = 'Erro desconhecido';
-        try {
-          const err = await response.json();
-          errMsg = err.error || JSON.stringify(err);
-        } catch {}
-
-        alert('Erro ao salvar local: ' + errMsg);
-        return;
+      
+      if (editingId) {
+        await apiService.updateLocal(editingId, { nome, descricao });
+      } else {
+        await apiService.createLocal({ nome, descricao });
       }
 
       setIsModalOpen(false);
@@ -113,22 +87,10 @@ const LocalManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este local?')) {
       try {
-        const response = await fetch(`${API_BASE}/locais/${id}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) {
-          let errMsg = 'Erro desconhecido';
-          try {
-            const err = await response.json();
-            errMsg = err.error || JSON.stringify(err);
-          } catch {}
-
-          alert('Erro ao deletar local: ' + errMsg);
-          return;
-        }
+        await apiService.deleteLocal(id);
         loadLocais();
       } catch (error) {
         console.error('Error deleting local:', error);
@@ -150,9 +112,9 @@ const LocalManagement: React.FC = () => {
       render: (value: string) => <span>{value}</span>,
     },
     {
-      key: 'criado_em',
+      key: 'createdAt',
       label: 'Criado em',
-      render: (value: string) => new Date(value).toLocaleDateString('pt-BR'),
+      render: (value: string) => value ? new Date(value).toLocaleDateString('pt-BR') : '-',
     },
     {
       key: 'actions',
