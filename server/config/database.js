@@ -1,10 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file only in development (Railway provides env vars directly)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+}
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 console.log('🔍 Checking Supabase config...');
+console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('URL exists:', !!supabaseUrl);
 console.log('Key exists:', !!supabaseServiceKey);
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -16,6 +17,11 @@ import locaisRoutes from './routes/locais.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env file only in development (Railway provides env vars directly)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.resolve(__dirname, '../.env') });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
