@@ -90,6 +90,7 @@ export interface DashboardStats {
   monthlyRevenue: number;
   totalStudents: number;
   activeRentals: number;
+  totalLocais?: number;
 }
 
 export interface AuthContextType {

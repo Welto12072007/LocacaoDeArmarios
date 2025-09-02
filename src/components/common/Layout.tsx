@@ -21,6 +21,17 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
+  // Função para abreviar email longo
+  const truncateEmail = (email: string, maxLength: number = 20) => {
+    if (email.length <= maxLength) return email;
+    
+    const [localPart, domain] = email.split('@');
+    if (localPart.length > maxLength - domain.length - 4) {
+      return `${localPart.slice(0, maxLength - domain.length - 4)}...@${domain}`;
+    }
+    return email;
+  };
+
   const navigation = [
     { name: 'Dashboard', href: '#dashboard', icon: Home, current: currentPage === 'dashboard' },
     { name: 'Armários', href: '#lockers', icon: Package, current: currentPage === 'lockers' },
@@ -91,8 +102,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
                   </span>
                 </div>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-base font-medium text-gray-700">{user?.email}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-base font-medium text-gray-700 truncate" title={user?.email}>
+                  {user?.email ? truncateEmail(user.email, 18) : ''}
+                </p>
                 <p className="text-sm font-medium text-gray-500">
                   {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </p>
@@ -146,8 +159,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage }) => {
                   </span>
                 </div>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700">{user?.email}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-700 truncate" title={user?.email}>
+                  {user?.email ? truncateEmail(user.email, 16) : ''}
+                </p>
                 <p className="text-xs font-medium text-gray-500">
                   {user?.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </p>
