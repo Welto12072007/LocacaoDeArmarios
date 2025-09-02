@@ -9,7 +9,11 @@ import {
 } from '../types';
 
 class ApiService {
-  private baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  private baseUrl = import.meta.env.VITE_API_URL || (
+    import.meta.env.MODE === 'production' 
+      ? '/api'  // Em produção, usa o mesmo domínio
+      : 'http://localhost:3001/api'  // Em desenvolvimento, usa localhost
+  );
 
   // Método genérico para requisições HTTP
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
